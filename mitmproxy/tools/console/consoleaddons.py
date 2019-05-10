@@ -311,6 +311,11 @@ class ConsoleAddon:
         """View the options editor."""
         self.master.switch_view("eventlog")
 
+    @command.command("console.view.tcplist")
+    def view_tcplist(self) -> None:
+        """View the options editor."""
+        self.master.switch_view("tcplist")
+
     @command.command("console.view.help")
     def view_help(self) -> None:
         """View help."""

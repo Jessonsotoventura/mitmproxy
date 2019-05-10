@@ -19,6 +19,7 @@ from mitmproxy import master
 from mitmproxy import log
 from mitmproxy.addons import intercept
 from mitmproxy.addons import eventstore
+from mitmproxy.addons import tcpview
 from mitmproxy.addons import readfile
 from mitmproxy.addons import view
 from mitmproxy.tools.console import consoleaddons
@@ -37,6 +38,7 @@ class ConsoleMaster(master.Master):
         self.start_err: typing.Optional[log.LogEntry] = None
 
         self.view: view.View = view.View()
+        self.tcpview: tcpview.TCPView = tcpview.TCPView()
         self.events = eventstore.EventStore()
         self.events.sig_add.connect(self.sig_add_log)
 
@@ -51,6 +53,7 @@ class ConsoleMaster(master.Master):
         self.addons.add(*addons.default_addons())
         self.addons.add(
             intercept.Intercept(),
+            self.tcpview,
             self.view,
             self.events,
             consoleaddons.UnsupportedLog(),

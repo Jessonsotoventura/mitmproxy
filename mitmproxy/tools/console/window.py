@@ -6,6 +6,7 @@ from mitmproxy.tools.console import signals
 from mitmproxy.tools.console import statusbar
 from mitmproxy.tools.console import flowlist
 from mitmproxy.tools.console import flowview
+from mitmproxy.tools.console import tcplist
 from mitmproxy.tools.console import commands
 from mitmproxy.tools.console import keybindings
 from mitmproxy.tools.console import options
@@ -59,6 +60,7 @@ class WindowStack:
             options = options.Options(master),
             help = help.HelpView(master),
             eventlog = eventlog.EventLog(master),
+            tcplist = tcplist.TCPListBox(master),
 
             edit_focus_query = grideditor.QueryEditor(master),
             edit_focus_cookies = grideditor.CookieEditor(master),

@@ -22,6 +22,7 @@ Contexts = {
     "eventlog",
     "flowlist",
     "flowview",
+    "tcplist",
     "global",
     "grideditor",
     "help",

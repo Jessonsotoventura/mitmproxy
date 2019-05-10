@@ -52,7 +52,7 @@ class RawTCPLayer(base.Layer):
 
                     tcp_message = tcp.TCPMessage(dst == server, buf[:size].tobytes())
                     if not self.ignore:
-                        f.messages.append(tcp_message)
+                        f.new_message(tcp_message)
                         self.channel.ask("tcp_message", f)
                     dst.sendall(tcp_message.content)
 

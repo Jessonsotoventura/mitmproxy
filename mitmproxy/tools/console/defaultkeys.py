@@ -7,6 +7,7 @@ def map(km):
     km.add("K", "console.view.keybindings", ["global"], "View key bindings")
     km.add("O", "console.view.options", ["global"], "View options")
     km.add("E", "console.view.eventlog", ["global"], "View event log")
+    km.add("T", "console.view.tcplist", ["global"], "View TCP Flow")
     km.add("Q", "console.exit", ["global"], "Exit immediately")
     km.add("q", "console.view.pop", ["global"], "Exit the current view")
     km.add("-", "console.layout.cycle", ["global"], "Cycle to next layout")
@@ -47,7 +48,7 @@ def map(km):
         ["flowlist", "flowview"],
         "Export this flow to file"
     )
-    km.add("f", "console.command.set view_filter", ["flowlist"], "Set view filter")
+    km.add("f", "console.command.set view_filter", ["flowlist", "tcplist"], "Set view filter")
     km.add("F", "set console_focus_follow=toggle", ["flowlist"], "Set focus follow")
     km.add(
         "ctrl l",
