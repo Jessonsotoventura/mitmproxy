@@ -19,6 +19,7 @@ from typing import List  # noqa
 
 from mitmproxy import exceptions
 from mitmproxy.net import http
+from mitmproxy import tcp
 from mitmproxy.utils import strutils
 from . import (
     auto, raw, hex, json, xml_html, wbxml, javascript, css,
@@ -80,29 +81,38 @@ def get_message_content_view(viewname, message):
     Like get_content_view, but also handles message encoding.
     """
     viewmode = get(viewname)
+    metadata = {}
+    enc = ""
     if not viewmode:
         viewmode = get("auto")
-    try:
-        content = message.content
-    except ValueError:
-        content = message.raw_content
-        enc = "[cannot decode]"
+
+    content = None
+    if isinstance(message, tcp.TCPBase):
+        content =  message.raw_content
+    elif isinstance(message, tcp.TCPFlow):
+        content =  message.raw_content
     else:
-        if isinstance(message, http.Message) and content != message.raw_content:
-            enc = "[decoded {}]".format(
-                message.headers.get("content-encoding")
-            )
+        try:
+            content = message.content
+        except ValueError:
+            content = message.raw_content
+            enc = "[cannot decode]"
         else:
-            enc = None
+            if isinstance(message, http.Message) and content != message.raw_content:
+                enc = "[decoded {}]".format(
+                    message.headers.get("content-encoding")
+                )
+            else:
+                enc = None
+
+            if isinstance(message, http.Request):
+                metadata["query"] = message.query
+            if isinstance(message, http.Message):
+                metadata["headers"] = message.headers
 
     if content is None:
         return "", iter([[("error", "content missing")]]), None
 
-    metadata = {}
-    if isinstance(message, http.Request):
-        metadata["query"] = message.query
-    if isinstance(message, http.Message):
-        metadata["headers"] = message.headers
 
     description, lines, error = get_content_view(
         viewmode, content, **metadata

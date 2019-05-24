@@ -15,14 +15,17 @@ import blinker
 import sortedcontainers
 
 import mitmproxy.flow
-from mitmproxy import tcp
 from mitmproxy import flowfilter
 from mitmproxy import exceptions
 from mitmproxy import command
 from mitmproxy import connections
 from mitmproxy import ctx
-from mitmproxy.addons import view
 from mitmproxy import io
+from mitmproxy import http  # noqa
+from mitmproxy.addons.views.common.orderkey import *
+from mitmproxy.addons.views.common.settings import Settings
+from mitmproxy.addons.views.common.focus import Focus
+
 
 # The underlying sorted list implementation expects the sort key to be stable
 # for the lifetime of the object. However, if we sort by size, for instance,
@@ -34,30 +37,6 @@ from mitmproxy import io
 # - Add a facility to refresh items in the list by removing and re-adding them
 # when they are updated.
 
-class OrderRequestStart(view._OrderKey):
-    def generate(self, f) -> int:
-        return 1
-        return f.request.timestamp_start or 0
-
-
-class OrderRequestMethod(view._OrderKey):
-    def generate(self, f) -> str:
-        return f.request.method
-
-
-class OrderRequestURL(view._OrderKey):
-    def generate(self, f) -> str:
-        return f.request.url
-
-
-class OrderKeySize(view._OrderKey):
-    def generate(self, f) -> int:
-        s = 0
-        if f.request.raw_content:
-            s += len(f.request.raw_content)
-        if f.response and f.response.raw_content:
-            s += len(f.response.raw_content)
-        return s
 
 
 matchall = flowfilter.parse(".")
@@ -71,7 +50,7 @@ orders = [
 ]
 
 
-class TCPView(view.View):
+class TCPView(collections.abc.Sequence):
     def __init__(self):
         super().__init__()
         self._store = collections.OrderedDict()
@@ -109,8 +88,8 @@ class TCPView(view.View):
         # Signals that the store should be refreshed completely
         self.sig_store_refresh = blinker.Signal()
 
-        self.focus = view.Focus(self)
-        self.settings = view.Settings(self)
+        self.focus = Focus(self)
+        self.settings = Settings(self)
 
     def load(self, loader):
         loader.add_option(
@@ -183,6 +162,70 @@ class TCPView(view.View):
 
     """ View API """
 
+    # Focus
+    @command.command("view.focus.go")
+    def go(self, dst: int) -> None:
+        """
+            Go to a specified offset. Positive offests are from the beginning of
+            the view, negative from the end of the view, so that 0 is the first
+            flow, -1 is the last flow.
+        """
+        if len(self) == 0:
+            return
+        if dst < 0:
+            dst = len(self) + dst
+        if dst < 0:
+            dst = 0
+        if dst > len(self) - 1:
+            dst = len(self) - 1
+        self.focus.flow = self[dst]
+
+    @command.command("view.focus.next")
+    def focus_next(self) -> None:
+        """
+            Set focus to the next flow.
+        """
+        idx = self.focus.index + 1
+        if self.inbounds(idx):
+            self.focus.flow = self[idx]
+
+    @command.command("view.focus.prev")
+    def focus_prev(self) -> None:
+        """
+            Set focus to the previous flow.
+        """
+        idx = self.focus.index - 1
+        if self.inbounds(idx):
+            self.focus.flow = self[idx]
+
+    # Order
+    @command.command("view.order.options")
+    def order_options(self) -> typing.Sequence[str]:
+        """
+            Choices supported by the view_order option.
+        """
+        return list(sorted(self.orders.keys()))
+
+    @command.command("view.order.reverse")
+    def set_reversed(self, value: bool) -> None:
+        self.order_reversed = value
+        self.sig_view_refresh.send(self)
+
+    @command.command("view.order.set")
+    def set_order(self, order: str) -> None:
+        """
+            Sets the current view order.
+        """
+        if order not in self.orders:
+            raise exceptions.CommandError(
+                "Unknown flow order: %s" % order
+            )
+        order_key = self.orders[order]
+        self.order_key = order_key
+        newview = sortedcontainers.SortedListWithKey(key=order_key)
+        newview.update(self._view)
+        self._view = newview
+
     @command.command("view.order")
     def get_order(self) -> str:
         """
@@ -194,20 +237,156 @@ class TCPView(view.View):
                 order = k
         return order
 
+    # Filter
+    @command.command("view.filter.set")
+    def set_filter_cmd(self, f: str) -> None:
+        """
+            Sets the current view filter.
+        """
+        filt = None
+        if f:
+            filt = flowfilter.parse(f)
+            if not filt:
+                raise exceptions.CommandError(
+                    "Invalid interception filter: %s" % f
+                )
+        self.set_filter(filt)
+
+    def set_filter(self, flt: typing.Optional[flowfilter.TFilter]):
+        self.filter = flt or matchall
+        self._refilter()
+
+    # View Updates
+    @command.command("view.clear")
+    def clear(self) -> None:
+        """
+            Clears both the store and view.
+        """
+        self._store.clear()
+        self._view.clear()
+        self.sig_view_refresh.send(self)
+        self.sig_store_refresh.send(self)
+
+    @command.command("view.clear_unmarked")
+    def clear_not_marked(self) -> None:
+        """
+            Clears only the unmarked flows.
+        """
+        for flow in self._store.copy().values():
+            if not flow.marked:
+                self._store.pop(flow.id)
+
+        self._refilter()
+        self.sig_store_refresh.send(self)
+
+    # View Settings
+    @command.command("view.settings.getval")
+    def getvalue(self, f: mitmproxy.flow.Flow, key: str, default: str) -> str:
+        """
+            Get a value from the settings store for the specified flow.
+        """
+        return self.settings[f].get(key, default)
+
+    @command.command("view.settings.setval.toggle")
+    def setvalue_toggle(
+        self,
+        flows: typing.Sequence[mitmproxy.flow.Flow],
+        key: str
+    ) -> None:
+        """
+            Toggle a boolean value in the settings store, setting the value to
+            the string "true" or "false".
+        """
+        updated = []
+        for f in flows:
+            current = self.settings[f].get("key", "false")
+            self.settings[f][key] = "false" if current == "true" else "true"
+            updated.append(f)
+        ctx.master.addons.trigger("update", updated)
+
+    @command.command("view.settings.setval")
+    def setvalue(
+        self,
+        flows: typing.Sequence[mitmproxy.flow.Flow],
+        key: str, value: str
+    ) -> None:
+        """
+            Set a value in the settings store for the specified flows.
+        """
+        updated = []
+        for f in flows:
+            self.settings[f][key] = value
+            updated.append(f)
+        ctx.master.addons.trigger("update", updated)
+
+    # Flows
+    @command.command("view.flows.duplicate")
+    def duplicate(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
+        """
+            Duplicates the specified flows, and sets the focus to the first
+            duplicate.
+        """
+        dups = [f.copy() for f in flows]
+        if dups:
+            self.add(dups)
+            self.focus.flow = dups[0]
+            ctx.log.alert("Duplicated %s flows" % len(dups))
+
+    @command.command("view.flows.remove")
+    def remove(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
+        """
+            Removes the flow from the underlying store and the view.
+        """
+        for f in flows:
+            if f.id in self._store:
+                if f.killable:
+                    f.kill()
+                if f in self._view:
+                    # We manually pass the index here because multiple flows may have the same
+                    # sorting key, and we cannot reconstruct the index from that.
+                    idx = self._view.index(f)
+                    self._view.remove(f)
+                    self.sig_view_remove.send(self, flow=f, index=idx)
+                del self._store[f.id]
+                self.sig_store_remove.send(self, flow=f)
+        if len(flows) > 1:
+            ctx.log.alert("Removed %s flows" % len(flows))
+
+    @command.command("tcp.flows.resolve")
+    def resolve(self, spec: str) -> typing.Sequence[mitmproxy.flow.Flow]:
+        """
+            Resolve a flow list specification to an actual list of flows.
+        """
+        if spec == "@all":
+            return [i for i in self._store.values()]
+        if spec == "@focus":
+            return [self.focus.flow] if self.focus.flow else []
+        elif spec == "@shown":
+            return [i for i in self]
+        elif spec == "@hidden":
+            return [i for i in self._store.values() if i not in self._view]
+        elif spec == "@marked":
+            return [i for i in self._store.values() if i.marked]
+        elif spec == "@unmarked":
+            return [i for i in self._store.values() if not i.marked]
+        else:
+            filt = flowfilter.parse(spec)
+            if not filt:
+                raise exceptions.CommandError("Invalid flow filter: %s" % spec)
+            return [i for i in self._store.values() if filt(i)]
 
     @command.command("view.flows.create")
     def create(self, method: str, url: str) -> None:
-        pass
-       #try:
-       #    req = http.HTTPRequest.make(method.upper(), url)
-       #except ValueError as e:
-       #    raise exceptions.CommandError("Invalid URL: %s" % e)
-       #c = connections.ClientConnection.make_dummy(("", 0))
-       #s = connections.ServerConnection.make_dummy((req.host, req.port))
-       #f = http.HTTPFlow(c, s)
-       #f.request = req
-       #f.request.headers["Host"] = req.host
-       #self.add([f])
+        try:
+            req = http.HTTPRequest.make(method.upper(), url)
+        except ValueError as e:
+            raise exceptions.CommandError("Invalid URL: %s" % e)
+        c = connections.ClientConnection.make_dummy(("", 0))
+        s = connections.ServerConnection.make_dummy((req.host, req.port))
+        f = http.HTTPFlow(c, s)
+        f.request = req
+        f.request.headers["Host"] = req.host
+        self.add([f])
 
     @command.command("view.flows.load")
     def load_file(self, path: mitmproxy.types.Path) -> None:
@@ -231,9 +410,8 @@ class TCPView(view.View):
             Adds a flow to the state. If the flow already exists, it is
             ignored.
         """
-        import pdb;pdb.set_trace()
         for f in flows:
-            if f.id not in self._store:
+            if True:
                 self._store[f.id] = f
                 if self.filter(f):
                     self._base_add(f)
@@ -241,6 +419,42 @@ class TCPView(view.View):
                         self.focus.flow = f
                     self.sig_view_add.send(self, flow=f)
 
+    def get_by_id(self, flow_id: str) -> typing.Optional[mitmproxy.flow.Flow]:
+        """
+            Get flow with the given id from the store.
+            Returns None if the flow is not found.
+        """
+        return self._store.get(flow_id)
+
+    # View Properties
+    @command.command("view.properties.length")
+    def get_length(self) -> int:
+        """
+            Returns view length.
+        """
+        return len(self)
+
+    @command.command("view.properties.marked")
+    def get_marked(self) -> bool:
+        """
+            Returns true if view is in marked mode.
+        """
+        return self.show_marked
+
+    @command.command("view.properties.marked.toggle")
+    def toggle_marked(self) -> None:
+        """
+            Toggle whether to show marked views only.
+        """
+        self.show_marked = not self.show_marked
+        self._refilter()
+
+    @command.command("view.properties.inbounds")
+    def inbounds(self, index: int) -> bool:
+        """
+            Is this 0 <= index < len(self)?
+        """
+        return 0 <= index < len(self)
 
     # Event handlers
     def configure(self, updated):
@@ -264,29 +478,10 @@ class TCPView(view.View):
         if "console_focus_follow" in updated:
             self.focus_follow = ctx.options.console_focus_follow
 
-    def tcp_start(self, f: tcp.TCPFlow):
+
+    def tcp_start(self, f):
         self.add([f])
 
-    def tcp_message(self, f: tcp.TCPFlow):
-        self.add([f])
-
-    def request(self, f):
-        pass
-
-    def error(self, f):
-        self.update([f])
-
-    def response(self, f):
-        self.update([f])
-
-    def intercept(self, f):
-        self.update([f])
-
-    def resume(self, f):
-        self.update([f])
-
-    def kill(self, f):
-        self.update([f])
 
     def update(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
         """
@@ -315,3 +510,5 @@ class TCPView(view.View):
                     else:
                         self._view.remove(f)
                         self.sig_view_remove.send(self, flow=f, index=idx)
+
+

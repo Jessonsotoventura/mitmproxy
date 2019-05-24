@@ -7,6 +7,7 @@ from mitmproxy import command
 from mitmproxy import exceptions
 from mitmproxy import flow
 from mitmproxy import http
+from mitmproxy import tcp
 from mitmproxy import log
 from mitmproxy import contentviews
 from mitmproxy.utils import strutils
@@ -313,13 +314,18 @@ class ConsoleAddon:
 
     @command.command("console.view.tcplist")
     def view_tcplist(self) -> None:
-        """View the options editor."""
+        """View the tcp list view"""
         self.master.switch_view("tcplist")
 
     @command.command("console.view.help")
     def view_help(self) -> None:
         """View help."""
         self.master.switch_view("help")
+
+    @command.command("console.view.tcp")
+    def view_tcp_flow(self, flow: flow.Flow) -> None:
+
+        self.master.switch_view("tcpview")
 
     @command.command("console.view.flow")
     def view_flow(self, flow: flow.Flow) -> None:
@@ -366,6 +372,16 @@ class ConsoleAddon:
         """
         return ["request", "response"]
 
+    @command.command("console.edit.focus.tcp.options")
+    def edit_focus_tcp_options(self) -> typing.Sequence[str]:
+        """
+            Possible components for console.edit.focus.
+        """
+        return [
+            "Client",
+            "Server",
+        ]
+
     @command.command("console.edit.focus.options")
     def edit_focus_options(self) -> typing.Sequence[str]:
         """
@@ -386,6 +402,28 @@ class ConsoleAddon:
             "set-cookies",
             "url",
         ]
+    @command.command("console.edit.tcp.focus")
+    @command.argument("part", type=mitmproxy.types.Choice("console.edit.focus.tcp.options"))
+    def edit_tcp_focus(self, part: str) -> None:
+        """
+            Edit a component of the currently focused flow.
+        """
+        flow = self.master.view.focus.flow
+        if not flow:
+            raise exceptions.CommandError("No flow selected.")
+        flow.backup()
+        if part == "Client":
+            message = flow.client
+        elif part == "Server":
+            message = flow.server
+        c = self.master.spawn_editor(message.raw_content or "")
+        # Fix an issue caused by some editors when editing a
+        # request/response body. Many editors make it hard to save a
+        # file without a terminating newline on the last line. When
+        # editing message bodies, this can cause problems. For now, I
+        # just strip the newlines off the end of the body when we return
+        # from an editor.
+        message.raw_content = c.rstrip(b"\n")
 
     @command.command("console.edit.focus")
     @command.argument("part", type=mitmproxy.types.Choice("console.edit.focus.options"))
@@ -421,7 +459,7 @@ class ConsoleAddon:
         elif part in ("request-body", "response-body"):
             if part == "request-body":
                 message = flow.request
-            else:
+            elif part == "response-body":
                 message = flow.response
             c = self.master.spawn_editor(message.get_content(strict=False) or b"")
             # Fix an issue caused by some editors when editing a
@@ -504,6 +542,28 @@ class ConsoleAddon:
         """
         self._grideditor().cmd_spawn_editor()
 
+    @command.command("console.tcpview.mode.set")
+    @command.argument("mode", type=mitmproxy.types.Choice("console.tcpview.mode.options"))
+    def tcpview_mode_set(self, mode:str) -> None:
+        """
+            Set the display mode for the current flow view.
+        """
+        fv = self.master.window.current_window("tcpview")
+        if not fv:
+            raise exceptions.CommandError("Not viewing a flow.")
+        idx = fv.body.tab_offset
+
+        if mode not in [i.name.lower() for i in contentviews.views]:
+            raise exceptions.CommandError("Invalid flowview mode.")
+
+        try:
+            self.master.commands.call_strings(
+                "view.settings.setval",
+                ["@focus", "flowview_mode_%s" % idx, mode]
+            )
+        except exceptions.CommandError as e:
+            signals.status_message.send(message=str(e))
+
     @command.command("console.flowview.mode.set")
     @command.argument("mode", type=mitmproxy.types.Choice("console.flowview.mode.options"))
     def flowview_mode_set(self, mode: str) -> None:
@@ -532,6 +592,25 @@ class ConsoleAddon:
             Returns the valid options for the flowview mode.
         """
         return [i.name.lower() for i in contentviews.views]
+
+    @command.command("console.tcpview.mode")
+    def tcpview_mode(self) -> str:
+        """
+            Get the display mode for the current flow view.
+        """
+        fv = self.master.window.current_window("tcpview")
+        if not fv:
+            raise exceptions.CommandError("Not viewing a flow.")
+        idx = fv.body.tab_offset
+        return self.master.commands.call_strings(
+            "view.settings.getval",
+            [
+                "@focus",
+                "flowview_mode_%s" % idx,
+                self.master.options.console_default_contentview,
+            ]
+        )
+
 
     @command.command("console.flowview.mode")
     def flowview_mode(self) -> str:

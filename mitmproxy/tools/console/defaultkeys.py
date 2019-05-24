@@ -7,7 +7,9 @@ def map(km):
     km.add("K", "console.view.keybindings", ["global"], "View key bindings")
     km.add("O", "console.view.options", ["global"], "View options")
     km.add("E", "console.view.eventlog", ["global"], "View event log")
-    km.add("T", "console.view.tcplist", ["global"], "View TCP Flow")
+    km.add("T", "console.view.tcplist", ["global"], "View event log")
+    km.add(")", "console.view.tcp", ["global"], "View event log")
+    km.add("(", "console.view.flow", ["global"], "View event log")
     km.add("Q", "console.exit", ["global"], "Exit immediately")
     km.add("q", "console.view.pop", ["global"], "Exit the current view")
     km.add("-", "console.layout.cycle", ["global"], "Cycle to next layout")
@@ -89,7 +91,6 @@ def map(km):
         ["flowlist", "flowview"],
         "Run a script on this flow"
     )
-
     km.add(
         "e",
         """
@@ -97,6 +98,16 @@ def map(km):
         console.edit.focus {choice}
         """,
         ["flowview"],
+        "Edit a flow component"
+    )
+
+    km.add(
+        "e",
+        """
+        console.choose.cmd Part console.edit.focus.tcp.options
+        console.edit.tcp.focus {choice}
+        """,
+        ["tcpview"],
         "Edit a flow component"
     )
     km.add(
@@ -124,7 +135,7 @@ def map(km):
         console.choose.cmd Mode console.flowview.mode.options
         console.flowview.mode.set {choice}
         """,
-        ["flowview"],
+        ["flowview", "tcpview"],
         "Set flow view mode"
     )
     km.add(

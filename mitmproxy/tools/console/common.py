@@ -6,6 +6,7 @@ import urwid
 import urwid.util
 
 from mitmproxy.utils import human
+from mitmproxy.tcp import TCPFlow
 
 # Detect Windows Subsystem for Linux
 IS_WSL = "Microsoft" in platform.platform()
@@ -198,44 +199,64 @@ def format_flow(f, focus, extended=False, hostheader=False, max_url_len=False):
     if f.reply and f.reply.state == "committed":
         acked = True
     pushed = ' PUSH_PROMISE' if 'h2-pushed-stream' in f.metadata else ''
-    d = dict(
-        focus=focus,
-        extended=extended,
-        max_url_len=max_url_len,
-        intercepted=f.intercepted,
-        acked=acked,
-        req_timestamp=f.request.timestamp_start,
-        req_is_replay=f.request.is_replay,
-        req_method=f.request.method + pushed,
-        req_url=f.request.pretty_url if hostheader else f.request.url,
-        req_http_version=f.request.http_version,
-        err_msg=f.error.msg if f.error else None,
-        marked=f.marked,
-    )
-    if f.response:
-        if f.response.raw_content:
-            contentdesc = human.pretty_size(len(f.response.raw_content))
-        elif f.response.raw_content is None:
-            contentdesc = "[content missing]"
-        else:
-            contentdesc = "[no content]"
-        duration = 0
-        if f.response.timestamp_end and f.request.timestamp_start:
-            duration = f.response.timestamp_end - f.request.timestamp_start
-        roundtrip = human.pretty_duration(duration)
 
-        d.update(dict(
-            resp_code=f.response.status_code,
-            resp_reason=f.response.reason,
-            resp_is_replay=f.response.is_replay,
-            resp_clen=contentdesc,
-            roundtrip=roundtrip,
-        ))
+    d = dict()
 
-        t = f.response.headers.get("content-type")
-        if t:
-            d["resp_ctype"] = t.split(";")[0]
-        else:
-            d["resp_ctype"] = ""
+    if isinstance(f, TCPFlow):
+        d = dict(
+            focus=focus,
+            extended=extended,
+            max_url_len=max_url_len,
+            intercepted=f.intercepted,
+            acked=acked,
+            req_timestamp=f.client.conn.timestamp_start,
+            req_is_replay=False,
+            req_method="TCP: C" + str(f.client_conn.connected()) + "S: " + str(f.server_conn.connected())  ,
+            req_url="URL" + str(f.client.recent_messages + f.server.recent_messages),
+            req_http_version="END",
+            err_msg=f.error.msg if f.error else None,
+            marked=f.marked,
+        )
+    else:
+        d = dict(
+            focus=focus,
+            extended=extended,
+            max_url_len=max_url_len,
+            intercepted=f.intercepted,
+            acked=acked,
+            req_timestamp=f.request.timestamp_start,
+            req_is_replay=f.request.is_replay,
+            req_method=f.request.method + pushed,
+            req_url=f.request.pretty_url if hostheader else f.request.url,
+            req_http_version=f.request.http_version,
+            err_msg=f.error.msg if f.error else None,
+            marked=f.marked,
+        )
+        
+        if f.response:
+            if f.response.raw_content:
+                contentdesc = human.pretty_size(len(f.response.raw_content))
+            elif f.response.raw_content is None:
+                contentdesc = "[content missing]"
+            else:
+                contentdesc = "[no content]"
+            duration = 0
+            if f.response.timestamp_end and f.request.timestamp_start:
+                duration = f.response.timestamp_end - f.request.timestamp_start
+            roundtrip = human.pretty_duration(duration)
+
+            d.update(dict(
+                resp_code=f.response.status_code,
+                resp_reason=f.response.reason,
+                resp_is_replay=f.response.is_replay,
+                resp_clen=contentdesc,
+                roundtrip=roundtrip,
+            ))
+
+            t = f.response.headers.get("content-type")
+            if t:
+                d["resp_ctype"] = t.split(";")[0]
+            else:
+                d["resp_ctype"] = ""
 
     return raw_format_flow(tuple(sorted(d.items())))

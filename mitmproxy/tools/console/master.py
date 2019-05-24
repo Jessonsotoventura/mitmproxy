@@ -19,9 +19,9 @@ from mitmproxy import master
 from mitmproxy import log
 from mitmproxy.addons import intercept
 from mitmproxy.addons import eventstore
-from mitmproxy.addons import tcpview
 from mitmproxy.addons import readfile
-from mitmproxy.addons import view
+from mitmproxy.addons.views import view
+from mitmproxy.addons.views import tcpview
 from mitmproxy.tools.console import consoleaddons
 from mitmproxy.tools.console import defaultkeys
 from mitmproxy.tools.console import keymap

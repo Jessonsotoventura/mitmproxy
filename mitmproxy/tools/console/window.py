@@ -6,7 +6,8 @@ from mitmproxy.tools.console import signals
 from mitmproxy.tools.console import statusbar
 from mitmproxy.tools.console import flowlist
 from mitmproxy.tools.console import flowview
-from mitmproxy.tools.console import tcplist
+from mitmproxy.tools.console.tcp import tcpview
+from mitmproxy.tools.console.tcp import tcplist
 from mitmproxy.tools.console import commands
 from mitmproxy.tools.console import keybindings
 from mitmproxy.tools.console import options
@@ -55,12 +56,13 @@ class WindowStack:
         self.windows = dict(
             flowlist = flowlist.FlowListBox(master),
             flowview = flowview.FlowView(master),
+            tcpview = tcpview.TCPView(master),
+            tcplist = tcplist.TCPListBox(master),
             commands = commands.Commands(master),
             keybindings = keybindings.KeyBindings(master),
             options = options.Options(master),
             help = help.HelpView(master),
             eventlog = eventlog.EventLog(master),
-            tcplist = tcplist.TCPListBox(master),
 
             edit_focus_query = grideditor.QueryEditor(master),
             edit_focus_cookies = grideditor.CookieEditor(master),
@@ -132,6 +134,14 @@ class Window(urwid.Frame):
             footer = urwid.AttrWrap(self.statusbar, "background")
         )
         self.master = master
+
+        self.master.tcpview.sig_view_refresh.connect(self.view_changed)
+        self.master.tcpview.sig_view_add.connect(self.view_changed)
+        self.master.tcpview.sig_view_remove.connect(self.view_changed)
+        self.master.tcpview.sig_view_update.connect(self.view_changed)
+        self.master.tcpview.focus.sig_change.connect(self.view_changed)
+        self.master.tcpview.focus.sig_change.connect(self.focus_changed)
+
         self.master.view.sig_view_refresh.connect(self.view_changed)
         self.master.view.sig_view_add.connect(self.view_changed)
         self.master.view.sig_view_remove.connect(self.view_changed)
@@ -149,6 +159,7 @@ class Window(urwid.Frame):
         self.pane = 0
         self.stacks = [
             WindowStack(master, "flowlist"),
+            WindowStack(master, "tcplist"),
             WindowStack(master, "eventlog")
         ]
 

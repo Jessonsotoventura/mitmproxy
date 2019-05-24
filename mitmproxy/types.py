@@ -337,7 +337,15 @@ class _FlowType(_BaseFlowType):
 
     def parse(self, manager: _CommandBase, t: type, s: str) -> flow.Flow:
         try:
-            flows = manager.call_strings("view.flows.resolve", [s])
+            # Find the current view
+            current_view = manager.master.window.stacks[0].stack[-1]
+            flows = None
+            if  current_view == "tcplist":
+                flows = manager.call_strings("tcp.flows.resolve", [s])
+            elif current_view == "flowlist":
+                flows = manager.call_strings("view.flows.resolve", [s])
+            else:
+                flows = None
         except exceptions.CommandError as e:
             raise exceptions.TypeError from e
         if len(flows) != 1:
@@ -356,7 +364,12 @@ class _FlowsType(_BaseFlowType):
 
     def parse(self, manager: _CommandBase, t: type, s: str) -> typing.Sequence[flow.Flow]:
         try:
-            return manager.call_strings("view.flows.resolve", [s])
+            current_view = manager.master.window.stacks[0].stack[-1]
+            flows = None
+            if  current_view == "tcplist":
+                return manager.call_strings("tcp.flows.resolve", [s])
+            elif current_view == "flowlist":
+                return manager.call_strings("view.flows.resolve", [s])
         except exceptions.CommandError as e:
             raise exceptions.TypeError from e
 

@@ -13,7 +13,7 @@ class TCPMessage(serializable.Serializable):
         self.content = content
         self.timestamp = timestamp or time.time()
 
-    @classmethod
+    @classmethod 
     def from_state(cls, state):
         return cls(*state)
 
@@ -33,13 +33,22 @@ class TCPBase(TCPMessage):
  
     def __init__(self, conn):
         self.conn = conn
-        self.raw_content = bytes()
         self.messages: List[TCPMessage] = []
+        self.recent_messages: int = 0
+
+    @property 
+    def raw_content(self):
+        content = bytes() 
+        for message in self.messages:
+            content += message.content
+        return content
 
     def new_message(self, message: TCPMessage):
         self.messages.append(message)
-        self.raw_content += message.content
+        self.recent_messages += 1
 
+    def clear_message_count(self):
+        self.recent_messages = 0
 
 class TCPFlow(flow.Flow):
 
@@ -65,3 +74,11 @@ class TCPFlow(flow.Flow):
         else:
             self.server.new_message(message)
         self.messages.append(message)
+
+    @property 
+    def raw_content(self):
+        content = bytes() 
+        for message in self.messages:
+            content += message.content
+        return content
+
