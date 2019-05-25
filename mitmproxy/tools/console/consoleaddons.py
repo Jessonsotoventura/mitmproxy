@@ -408,7 +408,7 @@ class ConsoleAddon:
         """
             Edit a component of the currently focused flow.
         """
-        flow = self.master.view.focus.flow
+        flow = self.master.tcpview.focus.flow
         if not flow:
             raise exceptions.CommandError("No flow selected.")
         flow.backup()
@@ -543,7 +543,7 @@ class ConsoleAddon:
         self._grideditor().cmd_spawn_editor()
 
     @command.command("console.tcpview.mode.set")
-    @command.argument("mode", type=mitmproxy.types.Choice("console.tcpview.mode.options"))
+    @command.argument("mode", type=mitmproxy.types.Choice("console.view.mode.options"))
     def tcpview_mode_set(self, mode:str) -> None:
         """
             Set the display mode for the current flow view.
@@ -558,7 +558,7 @@ class ConsoleAddon:
 
         try:
             self.master.commands.call_strings(
-                "view.settings.setval",
+                "tcp.settings.setval",
                 ["@focus", "flowview_mode_%s" % idx, mode]
             )
         except exceptions.CommandError as e:
@@ -586,10 +586,10 @@ class ConsoleAddon:
         except exceptions.CommandError as e:
             signals.status_message.send(message=str(e))
 
-    @command.command("console.flowview.mode.options")
-    def flowview_mode_options(self) -> typing.Sequence[str]:
+    @command.command("console.view.mode.options")
+    def view_mode_options(self) -> typing.Sequence[str]:
         """
-            Returns the valid options for the flowview mode.
+            Returns the valid options for the view mode.
         """
         return [i.name.lower() for i in contentviews.views]
 
@@ -603,7 +603,7 @@ class ConsoleAddon:
             raise exceptions.CommandError("Not viewing a flow.")
         idx = fv.body.tab_offset
         return self.master.commands.call_strings(
-            "view.settings.getval",
+            "tcp.settings.getval",
             [
                 "@focus",
                 "flowview_mode_%s" % idx,

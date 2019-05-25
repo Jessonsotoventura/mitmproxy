@@ -8,8 +8,6 @@ def map(km):
     km.add("O", "console.view.options", ["global"], "View options")
     km.add("E", "console.view.eventlog", ["global"], "View event log")
     km.add("T", "console.view.tcplist", ["global"], "View event log")
-    km.add(")", "console.view.tcp", ["global"], "View event log")
-    km.add("(", "console.view.flow", ["global"], "View event log")
     km.add("Q", "console.exit", ["global"], "Exit immediately")
     km.add("q", "console.view.pop", ["global"], "Exit the current view")
     km.add("-", "console.layout.cycle", ["global"], "Cycle to next layout")
@@ -132,10 +130,19 @@ def map(km):
     km.add(
         "m",
         """
-        console.choose.cmd Mode console.flowview.mode.options
+        console.choose.cmd Mode console.view.mode.options
+        console.tcpview.mode.set {choice}
+        """,
+        ["tcpview"],
+        "Set flow view mode"
+    )
+    km.add(
+        "m",
+        """
+        console.choose.cmd Mode console.view.mode.options
         console.flowview.mode.set {choice}
         """,
-        ["flowview", "tcpview"],
+        ["flowview"],
         "Set flow view mode"
     )
     km.add(

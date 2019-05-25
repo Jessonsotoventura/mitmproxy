@@ -340,12 +340,10 @@ class _FlowType(_BaseFlowType):
             # Find the current view
             current_view = manager.master.window.stacks[0].stack[-1]
             flows = None
-            if  current_view == "tcplist":
+            if  "tcp" in current_view:
                 flows = manager.call_strings("tcp.flows.resolve", [s])
-            elif current_view == "flowlist":
-                flows = manager.call_strings("view.flows.resolve", [s])
             else:
-                flows = None
+                flows = manager.call_strings("view.flows.resolve", [s])
         except exceptions.CommandError as e:
             raise exceptions.TypeError from e
         if len(flows) != 1:
@@ -366,9 +364,9 @@ class _FlowsType(_BaseFlowType):
         try:
             current_view = manager.master.window.stacks[0].stack[-1]
             flows = None
-            if  current_view == "tcplist":
+            if  "tcp" in current_view:
                 return manager.call_strings("tcp.flows.resolve", [s])
-            elif current_view == "flowlist":
+            else:
                 return manager.call_strings("view.flows.resolve", [s])
         except exceptions.CommandError as e:
             raise exceptions.TypeError from e

@@ -33,9 +33,9 @@ class TCPViewHeader(urwid.WidgetWrap):
 
     def focus_changed(self):
         cols, _ = self.master.ui.get_cols_rows()
-        if self.master.view.focus.flow:
+        if self.master.tcpview.focus.flow:
             self._w = common.format_flow(
-                self.master.view.focus.flow,
+                self.master.tcpview.focus.flow,
                 False,
                 extended=True,
                 hostheader=self.master.options.showhost,
@@ -65,11 +65,11 @@ class TCPDetails(tabs.Tabs):
 
     @property
     def view(self):
-        return self.master.view
+        return self.master.tcpview
 
     @property
     def flow(self):
-        return self.master.view.focus.flow
+        return self.master.tcpview.focus.flow
 
     def tab_tcp_client(self):
         return "Client"
@@ -94,7 +94,7 @@ class TCPDetails(tabs.Tabs):
             msg, body = "", [urwid.Text([("error", "[content missing]")])]
             return msg, body
         else:
-            full = self.master.commands.execute("view.settings.getval @focus fullcontents false")
+            full = self.master.commands.execute("tcp.settings.getval @focus fullcontents false")
             if full == "true":
                 limit = sys.maxsize
             else:

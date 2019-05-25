@@ -163,7 +163,7 @@ class TCPView(collections.abc.Sequence):
     """ View API """
 
     # Focus
-    @command.command("view.focus.go")
+    @command.command("tcp.focus.go")
     def go(self, dst: int) -> None:
         """
             Go to a specified offset. Positive offests are from the beginning of
@@ -180,7 +180,7 @@ class TCPView(collections.abc.Sequence):
             dst = len(self) - 1
         self.focus.flow = self[dst]
 
-    @command.command("view.focus.next")
+    @command.command("tcp.focus.next")
     def focus_next(self) -> None:
         """
             Set focus to the next flow.
@@ -189,7 +189,7 @@ class TCPView(collections.abc.Sequence):
         if self.inbounds(idx):
             self.focus.flow = self[idx]
 
-    @command.command("view.focus.prev")
+    @command.command("tcp.focus.prev")
     def focus_prev(self) -> None:
         """
             Set focus to the previous flow.
@@ -199,19 +199,19 @@ class TCPView(collections.abc.Sequence):
             self.focus.flow = self[idx]
 
     # Order
-    @command.command("view.order.options")
+    @command.command("tcp.order.options")
     def order_options(self) -> typing.Sequence[str]:
         """
             Choices supported by the view_order option.
         """
         return list(sorted(self.orders.keys()))
 
-    @command.command("view.order.reverse")
+    @command.command("tcp.order.reverse")
     def set_reversed(self, value: bool) -> None:
         self.order_reversed = value
         self.sig_view_refresh.send(self)
 
-    @command.command("view.order.set")
+    @command.command("tcp.order.set")
     def set_order(self, order: str) -> None:
         """
             Sets the current view order.
@@ -226,7 +226,7 @@ class TCPView(collections.abc.Sequence):
         newview.update(self._view)
         self._view = newview
 
-    @command.command("view.order")
+    @command.command("tcp.order")
     def get_order(self) -> str:
         """
         Returns the current view order.
@@ -238,7 +238,7 @@ class TCPView(collections.abc.Sequence):
         return order
 
     # Filter
-    @command.command("view.filter.set")
+    @command.command("tcp.filter.set")
     def set_filter_cmd(self, f: str) -> None:
         """
             Sets the current view filter.
@@ -257,7 +257,7 @@ class TCPView(collections.abc.Sequence):
         self._refilter()
 
     # View Updates
-    @command.command("view.clear")
+    @command.command("tcp.clear")
     def clear(self) -> None:
         """
             Clears both the store and view.
@@ -267,7 +267,7 @@ class TCPView(collections.abc.Sequence):
         self.sig_view_refresh.send(self)
         self.sig_store_refresh.send(self)
 
-    @command.command("view.clear_unmarked")
+    @command.command("tcp.clear_unmarked")
     def clear_not_marked(self) -> None:
         """
             Clears only the unmarked flows.
@@ -280,14 +280,14 @@ class TCPView(collections.abc.Sequence):
         self.sig_store_refresh.send(self)
 
     # View Settings
-    @command.command("view.settings.getval")
+    @command.command("tcp.settings.getval")
     def getvalue(self, f: mitmproxy.flow.Flow, key: str, default: str) -> str:
         """
             Get a value from the settings store for the specified flow.
         """
         return self.settings[f].get(key, default)
 
-    @command.command("view.settings.setval.toggle")
+    @command.command("tcp.settings.setval.toggle")
     def setvalue_toggle(
         self,
         flows: typing.Sequence[mitmproxy.flow.Flow],
@@ -304,7 +304,7 @@ class TCPView(collections.abc.Sequence):
             updated.append(f)
         ctx.master.addons.trigger("update", updated)
 
-    @command.command("view.settings.setval")
+    @command.command("tcp.settings.setval")
     def setvalue(
         self,
         flows: typing.Sequence[mitmproxy.flow.Flow],
@@ -320,7 +320,7 @@ class TCPView(collections.abc.Sequence):
         ctx.master.addons.trigger("update", updated)
 
     # Flows
-    @command.command("view.flows.duplicate")
+    @command.command("tcp.flows.duplicate")
     def duplicate(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
         """
             Duplicates the specified flows, and sets the focus to the first
@@ -332,7 +332,7 @@ class TCPView(collections.abc.Sequence):
             self.focus.flow = dups[0]
             ctx.log.alert("Duplicated %s flows" % len(dups))
 
-    @command.command("view.flows.remove")
+    @command.command("tcp.flows.remove")
     def remove(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
         """
             Removes the flow from the underlying store and the view.
@@ -375,7 +375,7 @@ class TCPView(collections.abc.Sequence):
                 raise exceptions.CommandError("Invalid flow filter: %s" % spec)
             return [i for i in self._store.values() if filt(i)]
 
-    @command.command("view.flows.create")
+    @command.command("tcp.flows.create")
     def create(self, method: str, url: str) -> None:
         try:
             req = http.HTTPRequest.make(method.upper(), url)
@@ -388,7 +388,7 @@ class TCPView(collections.abc.Sequence):
         f.request.headers["Host"] = req.host
         self.add([f])
 
-    @command.command("view.flows.load")
+    @command.command("tcp.flows.load")
     def load_file(self, path: mitmproxy.types.Path) -> None:
         """
             Load flows into the view, without processing them with addons.
@@ -427,21 +427,21 @@ class TCPView(collections.abc.Sequence):
         return self._store.get(flow_id)
 
     # View Properties
-    @command.command("view.properties.length")
+    @command.command("tcp.properties.length")
     def get_length(self) -> int:
         """
             Returns view length.
         """
         return len(self)
 
-    @command.command("view.properties.marked")
+    @command.command("tcp.properties.marked")
     def get_marked(self) -> bool:
         """
             Returns true if view is in marked mode.
         """
         return self.show_marked
 
-    @command.command("view.properties.marked.toggle")
+    @command.command("tcp.properties.marked.toggle")
     def toggle_marked(self) -> None:
         """
             Toggle whether to show marked views only.
@@ -449,7 +449,7 @@ class TCPView(collections.abc.Sequence):
         self.show_marked = not self.show_marked
         self._refilter()
 
-    @command.command("view.properties.inbounds")
+    @command.command("tcp.properties.inbounds")
     def inbounds(self, index: int) -> bool:
         """
             Is this 0 <= index < len(self)?
@@ -482,13 +482,15 @@ class TCPView(collections.abc.Sequence):
     def tcp_start(self, f):
         self.add([f])
 
+    def tcp_message(self, f):
+        self.update([f])
 
     def update(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
         """
             Updates a list of flows. If flow is not in the state, it's ignored.
         """
         for f in flows:
-            if f.id in self._store:
+            if True:
                 if self.filter(f):
                     if f not in self._view:
                         self._base_add(f)
