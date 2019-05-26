@@ -1,6 +1,7 @@
 import typing
 
 from mitmproxy import http  # noqa
+from mitmproxy import tcp # noqa
 
 
 class _OrderKey:
@@ -38,9 +39,10 @@ class _OrderKey:
 
 class OrderRequestStart(_OrderKey):
     def generate(self, f: http.HTTPFlow) -> int:
-        #TPDP
-        return f.client.conn.timestamp_start
-        return f.request.timestamp_start or 0
+        if isinstance(f, http.HTTPFlow):
+            return f.request.timestamp_start or 0
+        elif isinstance(f, tcp.TCPFlow):
+            return f.timestamp
 
 
 class OrderRequestMethod(_OrderKey):

@@ -3,13 +3,14 @@ import time
 from typing import List
 
 from mitmproxy import flow
+from mitmproxy import connections
 from mitmproxy.coretypes import serializable
 
 
 class TCPMessage(serializable.Serializable):
 
     def __init__(self, from_client, content, timestamp=None):
-        self.from_client = from_client
+        self.from_client:bool  = from_client
         self.content = content
         self.timestamp = timestamp or time.time()
 
@@ -29,12 +30,21 @@ class TCPMessage(serializable.Serializable):
             content=repr(self.content)
         )
 
-class TCPBase(TCPMessage):
+class TCPBase(serializable.Serializable):
  
     def __init__(self, conn):
-        self.conn = conn
+        self.conn: connections.ClientConnection = conn
         self.messages: List[TCPMessage] = []
-        self.recent_messages: int = 0
+
+    @classmethod 
+    def from_state(cls, state):
+        return cls(*state)
+
+    def get_state(self):
+        return self.messages
+
+    def set_state(self, state):
+         self.messages = state
 
     @property 
     def raw_content(self):
@@ -45,10 +55,7 @@ class TCPBase(TCPMessage):
 
     def new_message(self, message: TCPMessage):
         self.messages.append(message)
-        self.recent_messages += 1
 
-    def clear_message_count(self):
-        self.recent_messages = 0
 
 class TCPFlow(flow.Flow):
 
@@ -64,6 +71,11 @@ class TCPFlow(flow.Flow):
 
 
     _stateobject_attributes = flow.Flow._stateobject_attributes.copy()
+    _stateobject_attributes["messages"] = List[TCPMessage]
+    #_stateobject_attributes["server"] = TCPBase 
+    #_stateobject_attributes["client"] = TCPBase 
+    #_stateobject_attributes["client"] = TCPBase 
+
 
     def __repr__(self):
         return "<TCPFlow ({} messages)>".format(len(self.client.messages) + len(self.server.messages))
@@ -82,3 +94,9 @@ class TCPFlow(flow.Flow):
             content += message.content
         return content
 
+    @property
+    def timestamp(self):
+        if len(self.messages) > 0:
+            return self.messages[-1].timestamp
+        else:
+            return time.time()

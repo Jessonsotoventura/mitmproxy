@@ -72,9 +72,13 @@ class TCPDetails(tabs.Tabs):
         return self.master.tcpview.focus.flow
 
     def tab_tcp_client(self):
+        if self.flow.intercepted and self.flow.messages[-1].from_client:
+            return "[Intercepted] Client"
         return "Client"
 
     def tab_tcp_server(self):
+        if self.flow.intercepted and not self.flow.messages[-1].from_client:
+            return "[Intercepted] Server"
         return "Server"
 
     def tab_tcp_unified(self):

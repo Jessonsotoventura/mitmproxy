@@ -320,6 +320,39 @@ class TCPView(collections.abc.Sequence):
         ctx.master.addons.trigger("update", updated)
 
     # Flows
+    @command.command("tcp.flows.edit")
+    def edit(self, flows: typing.Sequence[mitmproxy.flow.Flow], ref:str, index: int) -> None:
+        """
+            Edits the specified tcp flow's message.
+            Use * to edit an entire flow
+        """
+        
+        if len(flows) != 1:
+            raise exceptions.CommandError("Multiple Flows select - Not currently supported") 
+        flow = flows[0]
+        message = None
+
+        if ref == "client":
+            message = flow.client.messages
+            if index > len(message) - 1:
+                raise exceptions.CommandError("Invalid Flow Index")
+            message = message[index]
+        elif ref == "server":
+            message = flow.server.messages
+            if index > len(message) - 1:
+                raise exceptions.CommandError("Invalid Flow Index")
+            message = message[index]
+        else:
+            message = flow.messages
+            if index > len(message) - 1:
+                raise exceptions.CommandError("Invalid Flow Index")
+            message = message[index]
+
+        content = ctx.master.spawn_editor(message.content or "")
+        message.content = content.rstrip(b"\n")
+
+
+
     @command.command("tcp.flows.duplicate")
     def duplicate(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
         """
@@ -333,7 +366,7 @@ class TCPView(collections.abc.Sequence):
             ctx.log.alert("Duplicated %s flows" % len(dups))
 
     @command.command("tcp.flows.remove")
-    def remove(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
+    def remove(self, flows: typing.Sequence[mitmproxy.flow.Flow], ref:str, index:int) -> None:
         """
             Removes the flow from the underlying store and the view.
         """
@@ -411,7 +444,7 @@ class TCPView(collections.abc.Sequence):
             ignored.
         """
         for f in flows:
-            if True:
+            if f.id not in self._store:
                 self._store[f.id] = f
                 if self.filter(f):
                     self._base_add(f)
@@ -485,12 +518,16 @@ class TCPView(collections.abc.Sequence):
     def tcp_message(self, f):
         self.update([f])
 
+    def tcp_end(self, f):
+        self.update([f])
+
+
     def update(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
         """
             Updates a list of flows. If flow is not in the state, it's ignored.
         """
         for f in flows:
-            if True:
+            if f.id in self._store:
                 if self.filter(f):
                     if f not in self._view:
                         self._base_add(f)

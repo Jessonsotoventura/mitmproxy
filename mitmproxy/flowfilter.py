@@ -119,6 +119,13 @@ class FTCP(_Action):
     def __call__(self, f):
         return True
 
+class FAll(_Action):
+    code = "all"
+    help = "Show all types of flows"
+
+    @only(tcp.TCPFlow, http.HTTPFlow, websocket.WebSocketFlow)
+    def __call__(self, f):
+        return True
 
 class FReq(_Action):
     code = "q"
@@ -459,6 +466,7 @@ filter_rex: Sequence[Type[_Rex]] = [
     FMethod,
     FSrc,
     FUrl,
+    FAll,
 ]
 filter_int = [
     FCode
@@ -490,7 +498,7 @@ def _make():
 
     # A naked rex is a URL rex:
     f = rex.copy()
-    f.setParseAction(FUrl.make)
+    f.setParseAction(FAll)
     parts.append(f)
 
     atom = pp.MatchFirst(parts)

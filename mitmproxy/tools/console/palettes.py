@@ -27,6 +27,8 @@ class Palette:
         'error', "warn", "alert",
         'header', 'highlight', 'intercept', 'replay', 'mark',
 
+        # TCP
+        'active', 
         # Hex view
         'offset',
 
@@ -112,6 +114,7 @@ class LowDark(Palette):
         intercept = ('brown', 'default'),
         replay = ('light green', 'default'),
         mark = ('light red', 'default'),
+        active = ('light green', 'default'),
 
         # Hex view
         offset = ('dark cyan', 'default'),
@@ -184,6 +187,7 @@ class LowLight(Palette):
         intercept = ('brown', 'default'),
         replay = ('dark green', 'default'),
         mark = ('dark red', 'default'),
+        active = ('dark green', 'default'),
 
         # Hex view
         offset = ('dark blue', 'default'),

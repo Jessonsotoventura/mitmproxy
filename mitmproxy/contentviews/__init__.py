@@ -16,6 +16,7 @@ parameters are passed as the ``query`` keyword argument.
 import traceback
 from typing import Dict, Optional  # noqa
 from typing import List  # noqa
+from typing import Generator
 
 from mitmproxy import exceptions
 from mitmproxy.net import http
@@ -83,13 +84,14 @@ def get_message_content_view(viewname, message):
     viewmode = get(viewname)
     metadata = {}
     enc = ""
+    description  =""
+    line = ""
+    error = ""
     if not viewmode:
         viewmode = get("auto")
 
     content = None
-    if isinstance(message, tcp.TCPBase):
-        content =  message.raw_content
-    elif isinstance(message, tcp.TCPFlow):
+    if isinstance(message, tcp.TCPBase) or isinstance(message, tcp.TCPFlow):
         content =  message.raw_content
     else:
         try:
@@ -113,16 +115,40 @@ def get_message_content_view(viewname, message):
     if content is None:
         return "", iter([[("error", "content missing")]]), None
 
-
-    description, lines, error = get_content_view(
-        viewmode, content, **metadata
-    )
-
+    if isinstance(message, tcp.TCPBase) or isinstance(message, tcp.TCPFlow):
+        content =  message.raw_content
+        message_lines = list()
+        count = 0
+        for tcpmessage in message.messages:
+            description, line, error = get_content_view(
+                viewmode, tcpmessage.content, **metadata
+            )
+            message_lines.append([("bold", "MESSAGE: %s" % count)])
+            message_lines.append(line)
+            count += 1
+        lines = tcp_lines(message_lines)
+    else:
+        description, line, error = get_content_view(
+            viewmode, content, **metadata
+        )
     if enc:
         description = "{} {}".format(enc, description)
 
     return description, lines, error
 
+def tcp_lines(lines):
+    """
+      Args: 
+         lines: A list of lines
+      Returns:
+          Generator of lines
+    """
+    for line in lines:
+        if isinstance(line, Generator):
+            for item in line:
+                yield item
+        else:
+            yield line
 
 def get_content_view(viewmode: View, data: bytes, **metadata):
     """

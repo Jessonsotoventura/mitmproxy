@@ -138,16 +138,35 @@ def raw_format_flow(f):
     else:
         uc = "title"
 
-    url = f["req_url"]
+    if "req_url" in f or "tcp_connection":
+        column_name = "req_url" if "req_url" in f else "tcp_connection"
+        url = f[column_name]
+        line = list()
 
-    if f["max_url_len"] and len(url) > f["max_url_len"]:
-        url = url[:f["max_url_len"]] + "…"
+        if f["max_url_len"] and len(url) > f["max_url_len"]:
+            url = url[:f["max_url_len"]] + "…"
 
-    if f["req_http_version"] not in ("HTTP/1.0", "HTTP/1.1"):
-        url += " " + f["req_http_version"]
-    req.append(
-        urwid.Text([(uc, url)])
-    )
+        if column_name == "req_url":
+            if f["req_http_version"] not in ("HTTP/1.0", "HTTP/1.1"):
+                url += " " + f["req_http_version"]
+                line.append((uc,url))
+        elif column_name == "tcp_connection":
+            url += " "
+            if f["intercepted"] and f["active"]:
+                con_mark = "active_intercept"
+                line.append((uc,url))
+                line.append((con_mark,SYMBOL_MARK))
+            elif f["active"] and not f["intercepted"]:
+                con_mark = "active"
+                line.append((uc,url))
+                line.append((con_mark,SYMBOL_MARK))
+            else:
+                line.append((uc,url))
+
+        req.append(
+            urwid.Text(line)
+        )
+        
 
     pile.append(urwid.Columns(req, dividechars=1))
 
@@ -190,6 +209,13 @@ def raw_format_flow(f):
                 )
             ])
         )
+    elif "tcp_client_count" in f:
+        client = f['tcp_client_count']
+        server = f['tcp_server_count']
+        total = client + server 
+        text = "%s/%s/%s" % (client, server, total)
+        resp.append(fcol(text, "text"))
+
     pile.append(urwid.Columns(resp, dividechars=1))
     return urwid.Pile(pile)
 
@@ -208,12 +234,14 @@ def format_flow(f, focus, extended=False, hostheader=False, max_url_len=False):
             extended=extended,
             max_url_len=max_url_len,
             intercepted=f.intercepted,
+            active=f.client_conn.connected(),
             acked=acked,
-            req_timestamp=f.client.conn.timestamp_start,
+            req_timestamp=f.timestamp,
             req_is_replay=False,
-            req_method="TCP: C" + str(f.client_conn.connected()) + "S: " + str(f.server_conn.connected())  ,
-            req_url="URL" + str(f.client.recent_messages + f.server.recent_messages),
-            req_http_version="END",
+            req_method="TCP",
+            tcp_connection=human.format_address(f.client_conn.address) + " <-> " + human.format_address(f.server_conn.address),
+            tcp_client_count=len(f.client.messages),
+            tcp_server_count=len(f.server.messages),
             err_msg=f.error.msg if f.error else None,
             marked=f.marked,
         )

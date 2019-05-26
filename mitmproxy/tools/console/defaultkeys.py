@@ -30,8 +30,8 @@ def map(km):
     km.add("I", "set intercept_active=toggle", ["global"], "Toggle intercept")
     km.add("i", "console.command.set intercept", ["global"], "Set intercept")
     km.add("W", "console.command.set save_stream_file", ["global"], "Stream to file")
-    km.add("A", "flow.resume @all", ["flowlist", "flowview"], "Resume all intercepted flows")
-    km.add("a", "flow.resume @focus", ["flowlist", "flowview"], "Resume this intercepted flow")
+    km.add("A", "flow.resume @all", ["flowlist", "flowview", "tcpview","tcplist"], "Resume all intercepted flows")
+    km.add("a", "flow.resume @focus", ["flowlist", "flowview", "tcpview","tcplist"], "Resume this intercepted flow")
     km.add(
         "b", "console.command cut.save @focus response.content ",
         ["flowlist", "flowview"],
@@ -57,8 +57,9 @@ def map(km):
         "Send cuts to clipboard"
     )
     km.add("L", "console.command view.load ", ["flowlist"], "Load flows from file")
-    km.add("m", "flow.mark.toggle @focus", ["flowlist"], "Toggle mark on this flow")
+    km.add("m", "flow.mark.toggle @focus", ["flowlist", "tcplist"], "Toggle mark on this flow")
     km.add("M", "view.properties.marked.toggle", ["flowlist"], "Toggle viewing marked flows")
+    km.add("M", "tcp.properties.marked.toggle", ["flowlist"], "Toggle viewing marked flows")
     km.add(
         "n",
         "console.command view.flows.create get https://example.com/",
@@ -74,12 +75,12 @@ def map(km):
         ["flowlist"],
         "Set flow list order"
     )
-    km.add("r", "replay.client @focus", ["flowlist", "flowview"], "Replay this flow")
+    km.add("r", "replay.client @focus", ["flowlist", "flowview", "tcplist"], "Replay this flow")
     km.add("S", "console.command replay.server ", ["flowlist"], "Start server replay")
-    km.add("v", "set view_order_reversed=toggle", ["flowlist"], "Reverse flow list order")
-    km.add("U", "flow.mark @all false", ["flowlist"], "Un-set all marks")
+    km.add("v", "set view_order_reversed=toggle", ["flowlist", "tcplist"], "Reverse flow list order")
+    km.add("U", "flow.mark @all false", ["flowlist","tcplist"], "Un-set all marks")
     km.add("w", "console.command save.file @shown ", ["flowlist"], "Save listed flows to file")
-    km.add("V", "flow.revert @focus", ["flowlist", "flowview"], "Revert changes to this flow")
+    km.add("V", "flow.revert @focus", ["flowlist", "flowview", "tcpview","tcplist"], "Revert changes to this flow")
     km.add("X", "flow.kill @focus", ["flowlist"], "Kill this flow")
     km.add("z", "view.flows.remove @all", ["flowlist"], "Clear flow list")
     km.add("Z", "view.flows.remove @hidden", ["flowlist"], "Purge all flows not showing")
@@ -98,16 +99,15 @@ def map(km):
         ["flowview"],
         "Edit a flow component"
     )
-
     km.add(
         "e",
         """
-        console.choose.cmd Part console.edit.focus.tcp.options
-        console.edit.tcp.focus {choice}
+        console.command tcp.flows.edit @focus absolute 
         """,
-        ["tcpview"],
-        "Edit a flow component"
+        ["tcpview", "tcplist"],
+        "Edit Flow"
     )
+
     km.add(
         "f",
         "view.settings.setval.toggle @focus fullcontents",
