@@ -127,7 +127,7 @@ class Window(urwid.Frame):
         super().__init__(
             None,
             header = None,
-            footer = urwid.AttrWrap(self.statusbar, "background")
+            footer = urwid.AttrMap(self.statusbar, "heading", "background")
         )
         self.master = master
         self.master.view.sig_view_refresh.connect(self.view_changed)
