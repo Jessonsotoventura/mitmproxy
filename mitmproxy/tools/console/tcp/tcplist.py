@@ -25,7 +25,6 @@ class TCPItem(urwid.WidgetWrap):
 
     def mouse_event(self, size, event, button, col, row, focus):
         if event == "mouse press" and button == 1:
-            import pdb;pdb.set_trace()
             if self.flow.request:
                 self.master.commands.execute("console.view.flow @focus")
                 return True
