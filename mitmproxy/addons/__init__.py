@@ -17,6 +17,7 @@ from mitmproxy.addons import setheaders
 from mitmproxy.addons import stickyauth
 from mitmproxy.addons import stickycookie
 from mitmproxy.addons import streambodies
+from mitmproxy.addons import viewswitcher 
 from mitmproxy.addons import save
 from mitmproxy.addons import upstream_auth
 
@@ -42,6 +43,7 @@ def default_addons():
         stickyauth.StickyAuth(),
         stickycookie.StickyCookie(),
         streambodies.StreamBodies(),
+        viewswitcher.ViewSwitcher(),
         save.Save(),
         upstream_auth.UpstreamAuth(),
     ]

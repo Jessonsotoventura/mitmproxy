@@ -323,6 +323,14 @@ class ConsoleAddon:
             # FIME: Also set focus?
             self.master.switch_view("flowview")
 
+    @command.command("console.view")
+    def view_switch(self, view: str):
+        try:
+            self.master.switch_view(view)
+        except Exception as e:
+            self.master.switch_view("flowlist")
+            signals.status_message.send(message=str(e))
+
     @command.command("console.exit")
     def exit(self) -> None:
         """Exit mitmproxy."""

@@ -219,7 +219,8 @@ class ConsoleMaster(master.Master):
         self.window.set_overlay(widget, **kwargs)
 
     def switch_view(self, name):
-        self.window.push(name)
+        if name in self.window.stacks[0].windows:
+            self.window.push(name)
 
     def quit(self, a):
         if a != "n":

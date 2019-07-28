@@ -47,6 +47,15 @@ def map(km):
         ["flowlist", "flowview"],
         "Export this flow to file"
     )
+    km.add(
+        "ctrl v",
+        """
+        console.choose.cmd ViewSwitcher view.switcher.views 
+        console.view {choice}
+        """,
+        ["global"],
+        "Switch between views"
+    )
     km.add("f", "console.command.set view_filter", ["flowlist"], "Set view filter")
     km.add("F", "set console_focus_follow=toggle", ["flowlist"], "Set focus follow")
     km.add(
