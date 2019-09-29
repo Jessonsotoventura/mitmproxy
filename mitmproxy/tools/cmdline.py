@@ -1,7 +1,5 @@
 import argparse
 
-from mitmproxy.addons import core
-
 
 def common_options(parser, opts):
     parser.add_argument(
@@ -19,12 +17,6 @@ def common_options(parser, opts):
         '--commands',
         action='store_true',
         help="Show all commands and their signatures",
-    )
-    parser.add_argument(
-        "--confdir",
-        type=str, dest="confdir", default=core.CONF_DIR,
-        metavar="PATH",
-        help="Path to the mitmproxy config directory"
     )
     parser.add_argument(
         "--set",
@@ -65,6 +57,7 @@ def common_options(parser, opts):
     opts.make_parser(group, "listen_port", metavar="PORT", short="p")
     opts.make_parser(group, "server", short="n")
     opts.make_parser(group, "ignore_hosts", metavar="HOST")
+    opts.make_parser(group, "allow_hosts", metavar="HOST")
     opts.make_parser(group, "tcp_hosts", metavar="HOST")
     opts.make_parser(group, "upstream_auth", metavar="USER:PASS")
     opts.make_parser(group, "proxyauth", metavar="SPEC")
@@ -85,6 +78,7 @@ def common_options(parser, opts):
     opts.make_parser(group, "server_replay", metavar="PATH", short="S")
     opts.make_parser(group, "server_replay_kill_extra")
     opts.make_parser(group, "server_replay_nopop")
+    opts.make_parser(group, "server_replay_refresh")
 
     # Replacements
     group = parser.add_argument_group("Replacements")
