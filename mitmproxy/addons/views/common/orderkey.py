@@ -43,6 +43,8 @@ class OrderRequestStart(_OrderKey):
             return f.request.timestamp_start or 0
         elif isinstance(f, tcp.TCPFlow):
             return f.timestamp
+        else:
+            return f.timestamp
 
 
 class OrderRequestMethod(_OrderKey):

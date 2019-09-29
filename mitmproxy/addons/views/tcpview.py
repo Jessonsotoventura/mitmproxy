@@ -446,7 +446,7 @@ class TCPView(collections.abc.Sequence):
         for f in flows:
             if f.id not in self._store:
                 self._store[f.id] = f
-                if self.filter(f):
+                if True: #TODO
                     self._base_add(f)
                     if self.focus_follow:
                         self.focus.flow = f
@@ -512,11 +512,8 @@ class TCPView(collections.abc.Sequence):
             self.focus_follow = ctx.options.console_focus_follow
 
 
-    def tcp_start(self, f):
-        self.add([f])
-
     def tcp_message(self, f):
-        self.update([f])
+        self.add([f])
 
     def tcp_end(self, f):
         self.update([f])

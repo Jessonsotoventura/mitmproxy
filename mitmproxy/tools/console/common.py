@@ -6,7 +6,7 @@ import urwid
 import urwid.util
 
 from mitmproxy.utils import human
-from mitmproxy.tcp import TCPFlow
+from mitmproxy.tcp import TCPMessage
 
 # Detect Windows Subsystem for Linux
 IS_WSL = "Microsoft" in platform.platform()
@@ -224,28 +224,28 @@ def format_flow(f, focus, extended=False, hostheader=False, max_url_len=False):
     acked = False
     if f.reply and f.reply.state == "committed":
         acked = True
-    pushed = ' PUSH_PROMISE' if 'h2-pushed-stream' in f.metadata else ''
 
     d = dict()
 
-    if isinstance(f, TCPFlow):
+    if isinstance(f, TCPMessage):
         d = dict(
             focus=focus,
             extended=extended,
             max_url_len=max_url_len,
-            intercepted=f.intercepted,
-            active=f.client_conn.connected(),
+            intercepted=f.flow.intercepted,
+            active=f.flow.client_conn.connected(),
             acked=acked,
             req_timestamp=f.timestamp,
             req_is_replay=False,
             req_method="TCP",
-            tcp_connection=human.format_address(f.client_conn.address) + " <-> " + human.format_address(f.server_conn.address),
-            tcp_client_count=len(f.client.messages),
-            tcp_server_count=len(f.server.messages),
-            err_msg=f.error.msg if f.error else None,
-            marked=f.marked,
+            tcp_connection=human.format_address(f.flow.client_conn.address) + " <-> " + human.format_address(f.flow.server_conn.address),
+            tcp_client_count=len(f.flow.client_messages),
+            tcp_server_count=len(f.flow.server_messages),
+            err_msg=f.error.msg if f.flow.error else None,
+            marked=f.flow.marked,
         )
     else:
+        pushed = ' PUSH_PROMISE' if 'h2-pushed-stream' in f.metadata else ''
         d = dict(
             focus=focus,
             extended=extended,
