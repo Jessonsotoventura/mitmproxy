@@ -39,7 +39,7 @@ class TCPViewHeader(urwid.WidgetWrap):
                 False,
                 extended=True,
                 hostheader=self.master.options.showhost,
-                max_url_len=cols,
+                cols=cols,
             )
         else:
             self._w = urwid.Pile([])
@@ -53,7 +53,7 @@ class TCPDetails(tabs.Tabs):
         self.last_displayed_body = None
 
     def focus_changed(self):
-        if self.master.tcpview.focus.flow:
+        if self.master.tcpview.focus.flow.flow:
             self.tabs = [
                 (self.tab_tcp_unified, self.view_tcp_unified),
                 (self.tab_tcp_client, self.view_tcp_client),
@@ -69,7 +69,7 @@ class TCPDetails(tabs.Tabs):
 
     @property
     def flow(self):
-        return self.master.tcpview.focus.flow
+        return self.master.tcpview.focus.flow.flow
 
     def tab_tcp_client(self):
         if self.flow.intercepted and self.flow.messages[-1].from_client:
@@ -85,20 +85,20 @@ class TCPDetails(tabs.Tabs):
         return "Unified"
 
     def view_tcp_client(self):
-        return self.conn_text(self.flow.client)
+        return self.conn_text(self.flow.client_stream)
 
     def view_tcp_server(self):
-        return self.conn_text(self.flow.server)
+        return self.conn_text(self.flow.server_stream)
 
     def view_tcp_unified(self):
         return self.conn_text(self.flow)
 
     def content_view(self, viewmode, message):
-        if message.messages is None:
+        if (type(message) != list and message.messages is None) or (type(message) == list and len(message) == 0):
             msg, body = "", [urwid.Text([("error", "[content missing]")])]
             return msg, body
         else:
-            full = self.master.commands.execute("tcp.settings.getval @focus fullcontents false")
+            full = self.master.commands.execute("tcp.settings.getval @focus_list fullcontents false")
             if full == "true":
                 limit = sys.maxsize
             else:
@@ -109,13 +109,13 @@ class TCPDetails(tabs.Tabs):
             if isinstance(message, tcp.TCPFlow):
                 flow_modify_cache_invalidation = hash((
                     message.raw_content,
-                    message.server.conn.address,
-                    message.client.conn.address,
+                    message.server_conn.address,
+                    message.client_conn.address,
                 ))
             else:
                 flow_modify_cache_invalidation = hash((
                     message.raw_content,
-                    message.conn.address,
+                    message[0].conn.address,
                 ))
 
             # we need to pass the message off-band because it's not hashable
@@ -210,7 +210,7 @@ class TCPDetails(tabs.Tabs):
 
 class TCPView(urwid.Frame, layoutwidget.LayoutWidget):
     keyctx = "tcpview"
-    title = "TCP Flow Details"
+    title = "TCP flow Details"
 
     def __init__(self, master):
         super().__init__(

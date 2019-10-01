@@ -106,6 +106,7 @@ class Command:
         if ret is None and self.returntype is None:
             return
         typ = mitmproxy.types.CommandTypes.get(self.returntype)
+        return ret
         if not typ.is_valid(self.manager, typ, ret):
             raise exceptions.CommandError(
                 "%s returned unexpected data - expected %s" % (

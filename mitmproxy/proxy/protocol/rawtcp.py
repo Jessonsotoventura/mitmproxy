@@ -11,6 +11,7 @@ from mitmproxy.proxy.protocol import base
 
 class RawTCPLayer(base.Layer):
     chunk_size = 4096
+    count = 0
 
     def __init__(self, ctx, ignore=False):
         self.ignore = ignore
@@ -20,7 +21,8 @@ class RawTCPLayer(base.Layer):
         self.connect()
 
         if not self.ignore:
-            f = tcp.TCPFlow(self.client_conn, self.server_conn, self)
+            f = tcp.TCPFlow(self.client_conn, self.server_conn, RawTCPLayer.count,self)
+            RawTCPLayer.count += 1
             self.channel.ask("tcp_start", f)
 
         buf = memoryview(bytearray(self.chunk_size))

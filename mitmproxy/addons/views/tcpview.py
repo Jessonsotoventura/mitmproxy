@@ -393,6 +393,8 @@ class TCPView(collections.abc.Sequence):
         if spec == "@all":
             return [i for i in self._store.values()]
         if spec == "@focus":
+            return [self.focus.flow.flow] if self.focus.flow.flow else []
+        elif spec == "@focus_list":
             return [self.focus.flow] if self.focus.flow else []
         elif spec == "@shown":
             return [i for i in self]

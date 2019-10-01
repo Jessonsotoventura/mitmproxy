@@ -6,6 +6,7 @@ from functools import reduce
 
 from mitmproxy import flow
 from mitmproxy import connections
+from mitmproxy.utils import human
 from mitmproxy.coretypes import serializable
 
 
@@ -17,6 +18,7 @@ class TCPMessage(serializable.Serializable):
         self.id = str(uuid.uuid4())
         self.flow = flow 
         self.timestamp = timestamp or time.time()
+        self.index = len(flow.messages)
 
     @classmethod 
     def from_state(cls, state):
@@ -29,9 +31,10 @@ class TCPMessage(serializable.Serializable):
         self.from_client, self.content, self.timestamp = state
 
     def __repr__(self):
-        return "{direction} {content}".format(
+        return "{client} {direction} {server}".format(
             direction="->" if self.from_client else "<-",
-            content=repr(self.content)
+            client=human.format_address(self.flow.client_conn.address),
+            server=human.format_address(self.flow.server_conn.address)
         )
 
     @property 
@@ -41,17 +44,19 @@ class TCPMessage(serializable.Serializable):
             content += message.content
         return content
 
+
 class TCPFlow(flow.Flow):
 
     """
     A TCPFlow is a simplified representation of a TCP session.
     """
 
-    def __init__(self, client_conn, server_conn, live=None):
+    def __init__(self, client_conn, server_conn, stream_index, live=None):
         super().__init__("tcp", client_conn, server_conn, live)
         self.client_conn = client_conn
         self.server_conn = server_conn
         self.messages: List[TCPMessage] = []
+        self.index = stream_index
 
 
     _stateobject_attributes = flow.Flow._stateobject_attributes.copy()
@@ -81,6 +86,13 @@ class TCPFlow(flow.Flow):
     @property
     def server_messages(self):
         return self.all_messages(False)
+    @property
+    def client_stream(self):
+        return TCPSteam(self.client_conn, self.server_conn, self.all_messages(True))
+
+    @property
+    def server_stream(self):
+        return TCPSteam(self.client_conn, self.server_conn, self.all_messages(False))
 
     @property
     def timestamp(self):
@@ -92,3 +104,9 @@ class TCPFlow(flow.Flow):
     def all_messages(self, from_client):
         return list(filter(lambda message: message.from_client == from_client, self.messages))
 
+
+class TCPSteam(TCPFlow):
+    def __init__(self, client_conn, server_conn, messages):
+        self.client_conn = client_conn
+        self.server_conn = server_conn
+        self.messages: List[TCPMessage] = messages

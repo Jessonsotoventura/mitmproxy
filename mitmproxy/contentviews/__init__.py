@@ -91,7 +91,7 @@ def get_message_content_view(viewname, message):
         viewmode = get("auto")
 
     content = None
-    if isinstance(message, tcp.TCPBase) or isinstance(message, tcp.TCPFlow):
+    if isinstance(message, tcp.TCPFlow):
         content =  message.raw_content
     else:
         try:
@@ -115,7 +115,7 @@ def get_message_content_view(viewname, message):
     if content is None:
         return "", iter([[("error", "content missing")]]), None
 
-    if isinstance(message, tcp.TCPBase) or isinstance(message, tcp.TCPFlow):
+    if  isinstance(message, tcp.TCPFlow):
         content =  message.raw_content
         message_lines = list()
         count = 0

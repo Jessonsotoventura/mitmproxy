@@ -577,7 +577,7 @@ class ConsoleAddon:
         try:
             self.master.commands.call_strings(
                 "tcp.settings.setval",
-                ["@focus", "flowview_mode_%s" % idx, mode]
+                ["@focus_list", "flowview_mode_%s" % idx, mode]
             )
         except exceptions.CommandError as e:
             signals.status_message.send(message=str(e))
@@ -599,7 +599,7 @@ class ConsoleAddon:
         try:
             self.master.commands.call_strings(
                 "view.settings.setval",
-                ["@focus", "flowview_mode_%s" % idx, mode]
+                ["@focus_list", "flowview_mode_%s" % idx, mode]
             )
         except exceptions.CommandError as e:
             signals.status_message.send(message=str(e))
@@ -620,14 +620,15 @@ class ConsoleAddon:
         if not fv:
             raise exceptions.CommandError("Not viewing a flow.")
         idx = fv.body.tab_offset
-        return self.master.commands.call_strings(
+        x=  self.master.commands.call_strings(
             "tcp.settings.getval",
             [
-                "@focus",
+                "@focus_list",
                 "flowview_mode_%s" % idx,
                 self.master.options.console_default_contentview,
             ]
         )
+        return x
 
 
     @command.command("console.flowview.mode")
