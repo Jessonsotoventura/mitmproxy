@@ -64,8 +64,9 @@ setup(
         "blinker>=1.4, <1.5",
         "Brotli>=1.0,<1.1",
         "certifi>=2019.9.11",  # no semver here - this should always be on the last release!
-        "click>=6.2, <7",
+        "click>=7.0,<8",
         "cryptography>=2.1.4,<2.5",
+        "flask>=1.1.1,<1.2",
         "h2>=3.0.1,<4",
         "hyperframe>=5.1.0,<6",
         "kaitaistruct>=0.7,<0.9",
@@ -78,7 +79,7 @@ setup(
         "pyperclip>=1.6.0,<1.8",
         "ruamel.yaml>=0.16,<0.17",
         "sortedcontainers>=2.1.0,<2.2",
-        "tornado>=4.3,<5.2",
+        "tornado>=4.3,<7",
         "urwid>=2.0.1,<2.1",
         "wsproto>=0.14.0,<0.15.0",
         "publicsuffix2>=2.20190812,<3",
@@ -104,7 +105,7 @@ setup(
             "rstcheck>=2.2,<4.0",
         ],
         'examples': [
-            "beautifulsoup4>=4.4.1,<4.7"
+            "beautifulsoup4>=4.4.1,<4.9"
         ]
     }
 )
