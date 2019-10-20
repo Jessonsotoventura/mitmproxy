@@ -577,7 +577,7 @@ class ConsoleAddon:
         try:
             self.master.commands.call_strings(
                 "tcp.settings.setval",
-                ["@focus_list", "flowview_mode_%s" % idx, mode]
+                ["@message", "flowview_mode_%s" % idx, mode]
             )
         except exceptions.CommandError as e:
             signals.status_message.send(message=str(e))
@@ -599,7 +599,7 @@ class ConsoleAddon:
         try:
             self.master.commands.call_strings(
                 "view.settings.setval",
-                ["@focus_list", "flowview_mode_%s" % idx, mode]
+                ["@message", "flowview_mode_%s" % idx, mode]
             )
         except exceptions.CommandError as e:
             signals.status_message.send(message=str(e))
@@ -623,7 +623,7 @@ class ConsoleAddon:
         x=  self.master.commands.call_strings(
             "tcp.settings.getval",
             [
-                "@focus_list",
+                "@message",
                 "flowview_mode_%s" % idx,
                 self.master.options.console_default_contentview,
             ]

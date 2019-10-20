@@ -100,9 +100,17 @@ def map(km):
         "Edit a flow component"
     )
     km.add(
+        "E",
+        """
+        console.command tcp.flows.edit @focus unified
+        """,
+        ["tcpview", "tcplist"],
+        "Edit Flow"
+    )
+    km.add(
         "e",
         """
-        console.command tcp.flows.edit @focus absolute 
+        tcp.flows.edit @message 
         """,
         ["tcpview", "tcplist"],
         "Edit Flow"

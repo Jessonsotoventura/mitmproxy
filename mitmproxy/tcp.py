@@ -37,13 +37,10 @@ class TCPMessage(serializable.Serializable):
             server=human.format_address(self.flow.server_conn.address)
         )
 
-    @property 
+    @property
     def raw_content(self):
-        content = bytes() 
-        for message in self.messages:
-            content += message.content
-        return content
-
+        #Probably needed in the future
+        return self.content
 
 class TCPFlow(flow.Flow):
 

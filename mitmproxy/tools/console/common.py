@@ -273,124 +273,6 @@ def colorize_url(url):
         ('url_punctuation', 3),  # ://
     ] + colorize_host(parts[2]) + colorize_req('/' + parts[3])
 
-
-@lru_cache(maxsize=800)
-def raw_format_list(f):
-    f = dict(f)
-    pile = []
-    req = []
-
-    if f["extended"]:
-        req.append(
-            fcol(
-                human.format_timestamp(f["req_timestamp"]),
-                "highlight"
-            )
-        )
-    else:
-        req.append(fcol(">>" if f["focus"] else "  ", "focus"))
-
-    if f["marked"]: #TODO
-        req.append(fcol(SYMBOL_MARK, "mark"))
-
-    if f["req_is_replay"]: #TODO 
-        req.append(fcol(SYMBOL_REPLAY, "replay"))
-
-    req.append(fcol(f["req_method"], "method"))
-
-    preamble = sum(i[1] for i in req) + len(req) - 1
-
-    if f["intercepted"] and not f["acked"]:
-        uc = "intercept"
-    elif "resp_code" in f or "err_msg" in f:
-        uc = "text"
-    else:
-        uc = "title"
-
-    if "req_url" in f:
-        column_name = "req_url" if "req_url" in f else "tcp_connection"
-        url = f[column_name]
-        line = list()
-
-        if f["cols"] and len(url) > f["cols"]:
-            url = url[:f["cols"]] + "…"
-
-        if column_name == "req_url":
-            if f["req_http_version"] not in ("HTTP/1.0", "HTTP/1.1"):
-                url += " " + f["req_http_version"]
-                line.append((uc,url))
-        elif column_name == "tcp_connection":
-            url += " "
-            if f["intercepted"] and f["active"]:
-                con_mark = "active_intercept"
-                line.append((uc,url))
-                line.append((con_mark,SYMBOL_MARK))
-            elif f["active"] and not f["intercepted"]:
-                con_mark = "active"
-                line.append((uc,url))
-                line.append((con_mark,SYMBOL_MARK))
-            else:
-                line.append((uc,url))
-    if f["cols"] and len(url) > f["cols"]:
-        url = url[:f["cols"]] + "…"
-
-    if f["req_http_version"] not in ("HTTP/1.0", "HTTP/1.1"):
-        url += " " + f["req_http_version"]
-    req.append(
-        urwid.Text([(uc, url)])
-    )
-    pile.append(urwid.Columns(req, dividechars=1))
-
-    resp = []
-    resp.append(
-        ("fixed", preamble, urwid.Text(""))
-    )
-
-    if "resp_code" in f:
-        codes = {
-            2: "code_200",
-            3: "code_300",
-            4: "code_400",
-            5: "code_500",
-        }
-        ccol = codes.get(f["resp_code"] // 100, "code_other")
-        resp.append(fcol(SYMBOL_RETURN, ccol))
-        if f["resp_is_replay"]:
-            resp.append(fcol(SYMBOL_REPLAY, "replay"))
-        resp.append(fcol(f["resp_code"], ccol))
-        if f["extended"]:
-            resp.append(fcol(f["resp_reason"], ccol))
-        if f["intercepted"] and f["resp_code"] and not f["acked"]:
-            rc = "intercept"
-        else:
-            rc = "text"
-
-        if f["resp_ctype"]:
-            resp.append(fcol(f["resp_ctype"], rc))
-        resp.append(fcol(f["resp_clen"], rc))
-        pretty_duration = human.pretty_duration(f["duration"])
-        resp.append(fcol(pretty_duration, rc))
-
-    elif f["err_msg"]:
-        resp.append(fcol(SYMBOL_RETURN, "error"))
-        resp.append(
-            urwid.Text([
-                (
-                    "error",
-                    f["err_msg"]
-                )
-            ])
-        )
-    elif "tcp_client_count" in f:
-        client = f['tcp_client_count']
-        server = f['tcp_server_count']
-        total = client + server 
-        text = "%s/%s/%s" % (client, server, total)
-        resp.append(fcol(text, "text"))
-
-    pile.append(urwid.Columns(resp, dividechars=1))
-    return urwid.Pile(pile)
-
 @lru_cache(maxsize=800)
 def raw_format_tcp_list(f):
     f = dict(f)
@@ -473,10 +355,10 @@ def raw_format_tcp_table(f):
 
     if f["intercepted"] and not f["acked"]:
         uc = "intercept"
-    elif f["err_msg"] is not None:
-        uc = "highlight"
-    else:
+    elif f["active"] or f["focus"]:
         uc = "title"
+    else:
+        uc = "text"
 
     if f["extended"]:
         s = human.format_timestamp(f["msg_timestamp"])
@@ -517,7 +399,96 @@ def raw_format_tcp_table(f):
     return urwid.Pile(pile)
 
 @lru_cache(maxsize=800)
-def raw_format_table(f):
+def raw_format_http_list(f):
+    f = dict(f)
+    pile = []
+    req = []
+    if f["extended"]:
+        req.append(
+            fcol(
+                human.format_timestamp(f["req_timestamp"]),
+                "highlight"
+            )
+        )
+    else:
+        req.append(fcol(">>" if f["focus"] else "  ", "focus"))
+
+    if f["marked"]:
+        req.append(fcol(SYMBOL_MARK, "mark"))
+
+    if f["req_is_replay"]:
+        req.append(fcol(SYMBOL_REPLAY, "replay"))
+
+    req.append(fcol(f["req_method"], "method"))
+
+    preamble = sum(i[1] for i in req) + len(req) - 1
+
+    if f["intercepted"] and not f["acked"]:
+        uc = "intercept"
+    elif "resp_code" in f or "err_msg" in f:
+        uc = "text"
+    else:
+        uc = "title"
+
+    url = f["req_url"]
+
+    if f["cols"] and len(url) > f["cols"]:
+        url = url[:f["cols"]] + "…"
+
+    if f["req_http_version"] not in ("HTTP/1.0", "HTTP/1.1"):
+        url += " " + f["req_http_version"]
+    req.append(
+        urwid.Text([(uc, url)])
+    )
+
+    pile.append(urwid.Columns(req, dividechars=1))
+
+    resp = []
+    resp.append(
+        ("fixed", preamble, urwid.Text(""))
+    )
+
+    if "resp_code" in f:
+        codes = {
+            2: "code_200",
+            3: "code_300",
+            4: "code_400",
+            5: "code_500",
+        }
+        ccol = codes.get(f["resp_code"] // 100, "code_other")
+        resp.append(fcol(SYMBOL_RETURN, ccol))
+        if f["resp_is_replay"]:
+            resp.append(fcol(SYMBOL_REPLAY, "replay"))
+        resp.append(fcol(f["resp_code"], ccol))
+        if f["extended"]:
+            resp.append(fcol(f["resp_reason"], ccol))
+        if f["intercepted"] and f["resp_code"] and not f["acked"]:
+            rc = "intercept"
+        else:
+            rc = "text"
+
+        if f["resp_ctype"]:
+            resp.append(fcol(f["resp_ctype"], rc))
+        resp.append(fcol(f["resp_clen"], rc))
+        pretty_duration = human.pretty_duration(f["duration"])
+        resp.append(fcol(pretty_duration, rc))
+
+    elif f["err_msg"]:
+        resp.append(fcol(SYMBOL_RETURN, "error"))
+        resp.append(
+            urwid.Text([
+                (
+                    "error",
+                    f["err_msg"]
+                )
+            ])
+        )
+    pile.append(urwid.Columns(resp, dividechars=1))
+    return urwid.Pile(pile)
+
+
+@lru_cache(maxsize=800)
+def raw_format_http_table(f):
     f = dict(f)
     pile = []
     req = []
@@ -674,7 +645,7 @@ def format_flow(f, focus, extended=False, hostheader=False, cols=False, layout='
             extended=extended,
             cols=cols,
             intercepted=f.flow.intercepted,
-            active=f.flow.client_conn.connected(),
+            active=f.flow.server_conn.connected(),
             acked=acked,
             msg_timestamp=f.timestamp,
             msg_is_replay=False,
@@ -686,6 +657,10 @@ def format_flow(f, focus, extended=False, hostheader=False, cols=False, layout='
             err_msg=f.error.msg if f.flow.error else None,
             marked=f.flow.marked,
         )
+        if ((layout == 'default' and cols < 100) or layout == "list"):
+            return raw_format_tcp_list(tuple(sorted(d.items())))
+        else:
+            return raw_format_tcp_table(tuple(sorted(d.items())))
     else:
         d = dict(
             focus=focus,
@@ -731,8 +706,7 @@ def format_flow(f, focus, extended=False, hostheader=False, cols=False, layout='
                 duration=duration,
             ))
 
-    return raw_format_tcp_table(tuple(sorted(d.items())))
-    if ((layout == 'default' and cols < 100) or layout == "list"):
-        return raw_format_list(tuple(sorted(d.items())))
-    else:
-        return raw_format_table(tuple(sorted(d.items())))
+        if ((layout == 'default' and cols < 100) or layout == "list"):
+            return raw_format_http_list(tuple(sorted(d.items())))
+        else:
+            return raw_format_http_table(tuple(sorted(d.items())))

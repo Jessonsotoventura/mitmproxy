@@ -55,9 +55,10 @@ class TCPDetails(tabs.Tabs):
     def focus_changed(self):
         if self.master.tcpview.focus.flow.flow:
             self.tabs = [
-                (self.tab_tcp_unified, self.view_tcp_unified),
+                (self.tab_tcp_message, self.view_tcp_message),
                 (self.tab_tcp_client, self.view_tcp_client),
                 (self.tab_tcp_server, self.view_tcp_server),
+                (self.tab_tcp_unified, self.view_tcp_unified),
             ]
             self.show()
         else:
@@ -81,6 +82,9 @@ class TCPDetails(tabs.Tabs):
             return "[Intercepted] Server"
         return "Server"
 
+    def tab_tcp_message(self):
+        return "Message"
+
     def tab_tcp_unified(self):
         return "Unified"
 
@@ -93,12 +97,24 @@ class TCPDetails(tabs.Tabs):
     def view_tcp_unified(self):
         return self.conn_text(self.flow)
 
+    def view_tcp_message(self):
+        return self.conn_text(self.master.tcpview.focus.flow)
+
     def content_view(self, viewmode, message):
-        if (type(message) != list and message.messages is None) or (type(message) == list and len(message) == 0):
+        empty = False
+
+        if  (isinstance(message, tcp.TCPMessage) and len(message.content) == 0):
+            empty = True
+        elif (isinstance(message, tcp.TCPFlow) and message.messages is None):
+            empty = True
+        elif (type(message) == list and len(message) == 0):
+            empty = True
+
+        if empty:
             msg, body = "", [urwid.Text([("error", "[content missing]")])]
             return msg, body
         else:
-            full = self.master.commands.execute("tcp.settings.getval @focus_list fullcontents false")
+            full = self.master.commands.execute("tcp.settings.getval @message fullcontents false")
             if full == "true":
                 limit = sys.maxsize
             else:
@@ -111,6 +127,12 @@ class TCPDetails(tabs.Tabs):
                     message.raw_content,
                     message.server_conn.address,
                     message.client_conn.address,
+                ))
+            elif isinstance(message, tcp.TCPMessage):
+                flow_modify_cache_invalidation = hash((
+                    message.raw_content,
+                    message.flow.server_conn.address,
+                    message.flow.client_conn.address,
                 ))
             else:
                 flow_modify_cache_invalidation = hash((

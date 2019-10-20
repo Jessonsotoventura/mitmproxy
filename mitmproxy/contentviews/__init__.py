@@ -91,7 +91,7 @@ def get_message_content_view(viewname, message):
         viewmode = get("auto")
 
     content = None
-    if isinstance(message, tcp.TCPFlow):
+    if isinstance(message, tcp.TCPFlow) or isinstance(message, tcp.TCPMessage):
         content =  message.raw_content
     else:
         try:
@@ -126,7 +126,15 @@ def get_message_content_view(viewname, message):
             message_lines.append([("bold", "MESSAGE: %s" % count)])
             message_lines.append(line)
             count += 1
-        lines = tcp_lines(message_lines)
+        line = tcp_lines(message_lines)
+    elif isinstance(message, tcp.TCPMessage):
+        content =  message.raw_content
+        message_lines = list()
+        message_lines.append([("bold", "MESSAGE: %s" % message.index)])
+        description, line, error = get_content_view(
+            viewmode, content, **metadata
+        )
+
     else:
         description, line, error = get_content_view(
             viewmode, content, **metadata
@@ -134,7 +142,7 @@ def get_message_content_view(viewname, message):
     if enc:
         description = "{} {}".format(enc, description)
 
-    return description, lines, error
+    return description, line, error
 
 def tcp_lines(lines):
     """

@@ -321,7 +321,7 @@ class TCPView(collections.abc.Sequence):
 
     # Flows
     @command.command("tcp.flows.edit")
-    def edit(self, flows: typing.Sequence[mitmproxy.flow.Flow], ref:str, index: int) -> None:
+    def edit(self, flows: typing.Sequence[mitmproxy.flow.Flow], ref:str = None, index: int = None) -> None:
         """
             Edits the specified tcp flow's message.
             Use * to edit an entire flow
@@ -331,26 +331,33 @@ class TCPView(collections.abc.Sequence):
             raise exceptions.CommandError("Multiple Flows select - Not currently supported") 
         flow = flows[0]
         message = None
+        
+        if ref is None:
+            message = flow.raw_content 
+            content = ctx.master.spawn_editor(message or "")
+            flow.content = content.rstrip(b"\n")
 
-        if ref == "client":
-            message = flow.client.messages
-            if index > len(message) - 1:
-                raise exceptions.CommandError("Invalid Flow Index")
-            message = message[index]
-        elif ref == "server":
-            message = flow.server.messages
-            if index > len(message) - 1:
-                raise exceptions.CommandError("Invalid Flow Index")
-            message = message[index]
         else:
-            message = flow.messages
-            if index > len(message) - 1:
-                raise exceptions.CommandError("Invalid Flow Index")
-            message = message[index]
+            if ref == "client":
+                message = flow.client.messages
+                if index > len(message) - 1:
+                    raise exceptions.CommandError("Invalid Flow Index")
+                message = message[index]
+            elif ref == "server":
+                message = flow.server.messages
+                if index > len(message) - 1:
+                    raise exceptions.CommandError("Invalid Flow Index")
+                message = message[index]
+            elif ref == "unified" :
+                message = flow.messages
+                if index > len(message) - 1:
+                    raise exceptions.CommandError("Invalid Flow Index")
+                message = message[index]
 
-        content = ctx.master.spawn_editor(message.content or "")
-        message.content = content.rstrip(b"\n")
+            content = ctx.master.spawn_editor(message.content or "")
+            message.content = content.rstrip(b"\n")
 
+        raise exceptions.CommandError("Invalid reference: %s, valid refs: client, server, unified" % ref)
 
 
     @command.command("tcp.flows.duplicate")
@@ -394,7 +401,7 @@ class TCPView(collections.abc.Sequence):
             return [i for i in self._store.values()]
         if spec == "@focus":
             return [self.focus.flow.flow] if self.focus.flow.flow else []
-        elif spec == "@focus_list":
+        elif spec == "@message":
             return [self.focus.flow] if self.focus.flow else []
         elif spec == "@shown":
             return [i for i in self]
