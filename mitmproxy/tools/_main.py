@@ -116,7 +116,7 @@ def run(
         loop = asyncio.get_event_loop()
         for signame in ('SIGINT', 'SIGTERM'):
             try:
-                loop.add_signal_handler(getattr(signal, signame), master.shutdown)
+                loop.add_signal_handler(getattr(signal, signame), master.prompt_for_exit)
             except NotImplementedError:
                 # Not supported on Windows
                 pass
