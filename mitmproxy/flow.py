@@ -77,6 +77,7 @@ class Flow(stateobject.StateObject):
         self._backup: typing.Optional[Flow] = None
         self.reply: typing.Optional[controller.Reply] = None
         self.marked: bool = False
+        self.hidden: bool = False
         self.metadata: typing.Dict[str, typing.Any] = dict()
 
     _stateobject_attributes = dict(

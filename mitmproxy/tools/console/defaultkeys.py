@@ -36,8 +36,8 @@ def map(km):
         ["flowlist", "flowview"],
         "Save response body to file"
     )
-    km.add("d", "view.flows.remove @focus", ["flowlist", "flowview"], "Delete flow from view")
-    km.add("D", "view.flows.duplicate @focus", ["flowlist", "flowview"], "Duplicate flow")
+    km.add("ctrl d", "view.flows.remove @focus", ["flowlist", "flowview"], "Delete flow from view")
+    km.add("ctrl D", "view.flows.duplicate @focus", ["flowlist", "flowview"], "Duplicate flow")
     km.add(
         "e",
         """
@@ -82,6 +82,10 @@ def map(km):
     km.add("X", "flow.kill @focus", ["flowlist"], "Kill this flow")
     km.add("z", "view.flows.remove @all", ["flowlist"], "Clear flow list")
     km.add("Z", "view.flows.remove @hidden", ["flowlist"], "Purge all flows not showing")
+    km.add("1", "console.command set view_filter=!~hidden", ["flowlist"], "Show only non-hidden flows")
+    km.add("2", "console.command set view_filter=~hidden", ["flowlist"], "Show only hidden flows")
+    km.add("d", "console.command view.flows.hide @focus", ["flowlist"], "Hide Flow")
+    km.add("D", "console.command view.flows.show @focus", ["flowlist"], "Show Hidden Flow")
     km.add(
         "|",
         "console.command script.run @focus ",

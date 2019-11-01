@@ -119,6 +119,12 @@ class FTCP(_Action):
     def __call__(self, f):
         return True
 
+class FHidden(_Action):
+    code = "hidden"
+    help = "Show Hidden Flows"
+
+    def __call__(self, f):
+        return f.hidden
 
 class FReq(_Action):
     code = "q"
@@ -443,6 +449,7 @@ filter_unary: Sequence[Type[_Action]] = [
     FResp,
     FTCP,
     FWebSocket,
+    FHidden
 ]
 filter_rex: Sequence[Type[_Rex]] = [
     FBod,

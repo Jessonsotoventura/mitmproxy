@@ -385,6 +385,32 @@ class View(collections.abc.Sequence):
             self.focus.flow = dups[0]
             ctx.log.alert("Duplicated %s flows" % len(dups))
 
+    @command.command("view.flows.show")
+    def show(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
+        """
+            Sets the hidden flag to False
+        """
+        for f in flows:
+            if f.id in self._store:
+                if f in self._view:
+                    f.hidden = False
+        self._refilter()
+        if len(flows) > 1:
+            ctx.log.alert("Showing %s flows" % len(flows))
+
+    @command.command("view.flows.hide")
+    def hide(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
+        """
+            Sets the hidden flag to True
+        """
+        for f in flows:
+            if f.id in self._store:
+                if f in self._view:
+                    f.hidden = True
+        self._refilter()
+        if len(flows) > 1:
+            ctx.log.alert("Hide %s flows" % len(flows))
+
     @command.command("view.flows.remove")
     def remove(self, flows: typing.Sequence[mitmproxy.flow.Flow]) -> None:
         """
