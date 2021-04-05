@@ -273,13 +273,13 @@ class TlsConfig:
         organization: Optional[str] = None
 
         # Use upstream certificate if available.
-        if conn_context.server.certificate_list:
-            upstream_cert = conn_context.server.certificate_list[0]
-            if upstream_cert.cn:
-                altnames.append(upstream_cert.cn)
-            altnames.extend(upstream_cert.altnames)
-            if upstream_cert.organization:
-                organization = upstream_cert.organization
+        #if conn_context.server.certificate_list:
+            #upstream_cert = conn_context.server.certificate_list[0]
+           # if upstream_cert.cn:
+           #     altnames.append(upstream_cert.cn)
+            #altnames.extend(upstream_cert.altnames)
+            #if upstream_cert.organization:
+                #organization = upstream_cert.organization
 
         # Add SNI. If not available, try the server address as well.
         if conn_context.client.sni:

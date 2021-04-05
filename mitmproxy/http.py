@@ -552,6 +552,9 @@ class Request(Message):
             timestamp_end=timestamp_end,
         )
 
+        self.app_tests = {"TEST":"LIST"}
+        self.is_test_request = False
+
     def __repr__(self) -> str:
         if self.host and self.port:
             hostport = f"{self.host}:{self.port}"

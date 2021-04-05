@@ -9,8 +9,7 @@
         Patterns are matched against "name: value" strings. Field names are
         all-lowercase.
 
-        ~a          Asset content-type in response. Asset content types are:
-                        text/javascript
+        ~a          Asset content-type in response. Asset content types are: text/javascript
                         application/x-javascript
                         application/javascript
                         text/css
@@ -97,6 +96,24 @@ class FHTTP(_Action):
     @only(http.HTTPFlow)
     def __call__(self, f):
         return True
+
+class FTESTEDONLY(_Action):
+    code = "testonly"
+    help = "Show test cases"
+
+    @only(http.HTTPFlow)
+    def __call__(self, f):
+        if (len(f.request.app_tests) > 1):
+            return True
+
+class FSHOWMATCHING(_Action):
+    code = "testcases"
+    help = "Show test cases"
+
+    @only(http.HTTPFlow)
+    def __call__(self, f):
+        if (f.request.is_test_request):
+            return True
 
 
 class FWebSocket(_Action):
@@ -271,7 +288,6 @@ class FBod(_Rex):
                     return True
         return False
 
-
 class FBodRequest(_Rex):
     code = "bq"
     help = "Request body"
@@ -313,6 +329,19 @@ class FBodResponse(_Rex):
                 if not msg.from_client and self.re.search(msg.content):
                     return True
 
+class FSHOWTEST(_Rex):
+    code = "test"
+    help = "Specify test"
+    flags = re.IGNORECASE
+
+    @only(http.HTTPFlow)
+    def __call__(self, f):
+        if (not f.request.is_test_request):
+            pattern = self.re.pattern.decode()
+            test = pattern.split(":")[0]
+            result = pattern.split(":")[1]
+            if(test in f.request.app_tests and f.request.app_tests[test] == result):
+                return True
 
 class FMethod(_Rex):
     code = "m"
@@ -443,6 +472,8 @@ filter_unary: Sequence[Type[_Action]] = [
     FAsset,
     FErr,
     FHTTP,
+    FSHOWMATCHING,
+    FTESTEDONLY,
     FMarked,
     FReq,
     FResp,
@@ -462,6 +493,7 @@ filter_rex: Sequence[Type[_Rex]] = [
     FHeadRequest,
     FHeadResponse,
     FMethod,
+    FSHOWTEST,
     FSrc,
     FUrl,
 ]

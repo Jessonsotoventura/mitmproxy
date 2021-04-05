@@ -15,6 +15,8 @@ from mitmproxy.tools.console import flowdetailview
 from mitmproxy.tools.console import layoutwidget
 from mitmproxy.tools.console import searchable
 from mitmproxy.tools.console import tabs
+from mitmproxy.tools.console import mitm_tests
+import mitmproxy.tools.console.master  # noqa
 from mitmproxy.utils import strutils
 
 
@@ -74,6 +76,7 @@ class FlowDetails(tabs.Tabs):
                         (self.tab_http_request, self.view_request),
                         (self.tab_http_response, self.view_response),
                         (self.tab_details, self.view_details),
+                        (self.tab_app_tests, self.view_test_results),
                     ]
             elif isinstance(f, tcp.TCPFlow):
                 self.tabs = [
@@ -105,6 +108,9 @@ class FlowDetails(tabs.Tabs):
 
     def tab_websocket_messages(self):
         return "WebSocket Messages"
+
+    def tab_app_tests(self):
+        return "App Tests"
 
     def tab_details(self):
         return "Detail"
@@ -225,6 +231,9 @@ class FlowDetails(tabs.Tabs):
 
     def view_details(self):
         return flowdetailview.flowdetails(self.view, self.flow)
+
+    def view_test_results(self):
+        return mitm_tests.results(self.view, self.flow)
 
     def content_view(self, viewmode, message):
         if message.raw_content is None:
